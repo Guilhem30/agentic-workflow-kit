@@ -31,6 +31,14 @@ class DegradedCase(GuardCase):
                 self.assertTrue(decision.reason.startswith(PREFIX), decision.reason)
                 self.assertTrue(decision.reason.endswith(SUFFIX), decision.reason)
 
+    def assert_denied_either_way(self, *paths: str) -> None:
+        """Kit files are denied without reading the lock (R003-09), so a guard that reads the
+        lock lazily may answer in normal mode; both modes deny."""
+        for path in paths:
+            with self.subTest(path=path):
+                decision = self.decide(WriteAction([path]), normal=False)
+                self.assertEqual(decision.verdict, DENY)
+
     def assert_degraded_allow(self, *actions, cfg="load") -> None:
         for action in actions:
             with self.subTest(action=action):
@@ -47,23 +55,20 @@ class DegradedModeTests(DegradedCase):
                                   "fixtures/data.json")
 
     def test_R003_27_kit_files_denied(self):
-        self.assert_degraded_deny("tests.lock.json", "tests.unfreeze-log.md", "agentkit.toml",
-                                  ".agentkit/bin/agentkit", "chaos-log.jsonl",
-                                  "specs/003-guard/reviews/r.md")
+        self.assert_denied_either_way("tests.lock.json", "tests.unfreeze-log.md", "agentkit.toml",
+                                      ".agentkit/bin/agentkit", "chaos-log.jsonl",
+                                      "specs/003-guard/reviews/r.md")
 
     def test_R003_27_configured_chaos_log_denied(self):
         self.configure('[chaos]\nenabled = true\nlog = "meta/chaos.jsonl"\n')
-        self.assert_degraded_deny("meta/chaos.jsonl")
+        self.assert_denied_either_way("meta/chaos.jsonl")
 
     def test_R003_27_configured_kit_paths_denied(self):
         self.configure('[paths]\nlock = "meta/lock.json"\nunfreeze_log = "meta/unfreeze.md"\n'
                        'specs = "doc/specs"\n')
         self.write("meta/lock.json", "{ not json\n")
-        self.assert_degraded_deny("meta/lock.json", "meta/unfreeze.md", "doc/specs/003-x/reviews/r.md")
-
-    def test_R003_27_paths_outside_the_repository_allowed(self):
-        self.assert_degraded_allow(WriteAction([str(self.tmp / "elsewhere/tests/test_x.py")]),
-                                   WriteAction(["../elsewhere/tests/test_x.py"]))
+        self.assert_denied_either_way("meta/lock.json", "meta/unfreeze.md",
+                                      "doc/specs/003-x/reviews/r.md")
 
     def test_R003_27_paths_still_resolve(self):
         self.assert_degraded_deny(str(self.root / "core/src/test/FooTest.kt"))
@@ -72,9 +77,8 @@ class DegradedModeTests(DegradedCase):
         self.assertEqual(decision.verdict, DENY)
 
     def test_R003_27_everything_else_allowed_with_a_warning(self):
+        # Writes inside the repository need the frozen list, so the corrupt lock bites.
         self.assert_degraded_allow(WriteAction(["core/src/main/Foo.kt"]),
-                                   ReadAction(["core/src/test/FooTest.kt"]),
-                                   ShellAction("./gradlew test"),
                                    ShellAction("rm core/src/test/FooTest.kt"),
                                    WriteAction([".github/workflows/ci.yml"]))
 
@@ -94,7 +98,7 @@ class DegradedModeTests(DegradedCase):
         with mock.patch.object(subprocess, "run") as run, \
                 mock.patch.object(subprocess, "Popen") as popen:
             self.assert_degraded_deny("core/src/test/FooTest.kt")
-            self.assert_degraded_allow(ShellAction("git commit --no-verify -m x"))
+            self.assert_degraded_allow(ShellAction("rm core/src/test/FooTest.kt"))
         run.assert_not_called()
         popen.assert_not_called()
 
@@ -105,7 +109,7 @@ class DegradedModeTests(DegradedCase):
         self.assertEqual(decision.reason, "; ".join(decision.reasons))
 
     def test_R003_30_degraded_allow_warns_on_stderr(self):
-        decision = self.decide(ShellAction("make"), normal=False)
+        decision = self.decide(WriteAction(["core/src/main/Foo.kt"]), normal=False)
         self.assertEqual(decision.verdict, ALLOW)
         self.assertIn(ALLOWING, self.stderr)
 
@@ -127,6 +131,17 @@ class NoConfigurationTests(DegradedCase):
         self.assert_degraded_deny("agentkit.toml", "tests.lock.json", "chaos-log.jsonl",
                                   ".agentkit/profiles/fixture.toml",
                                   "specs/003-guard/reviews/r.md", cfg=None)
+
+    def test_R003_27_reads_and_shell_allowed_with_a_warning(self):
+        self.assert_degraded_allow(ReadAction(["core/src/test/FooTest.kt"]),
+                                   ReadAction(["app/build/reports/x.html"]),
+                                   ShellAction("./gradlew test"),
+                                   ShellAction("git commit --no-verify -m x"),
+                                   ShellAction("make"), cfg=None)
+
+    def test_R003_27_paths_outside_the_repository_allowed(self):
+        self.assert_degraded_allow(WriteAction([str(self.tmp / "elsewhere/tests/test_x.py")]),
+                                   WriteAction(["../elsewhere/tests/test_x.py"]), cfg=None)
 
     def test_R003_29_root_from_the_working_directory(self):
         os.chdir(self.tmp)  # outside the repository: only the cwd argument leads to the root
