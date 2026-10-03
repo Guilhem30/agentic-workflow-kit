@@ -1,7 +1,7 @@
 ---
 id: "001"
 title: Configuration, profiles, globs and model tiers
-status: approved
+status: tests-draft
 ---
 
 # 001 Configuration, profiles, globs and model tiers
