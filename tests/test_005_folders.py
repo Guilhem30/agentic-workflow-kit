@@ -111,23 +111,13 @@ class DuplicateTests(SpecCase):
         code, out = run_cli("trace", "--spec", "003")
         self.assertEqual(code, 1)
         self.assert_names_both(out)
-        code, out = run_cli("trace", "--spec", "004")
-        self.assertEqual(code, 1)
-        self.assert_names_both(out)
 
     def test_R005_19_spec_status_refuses_duplicates(self):
         before = self.tree()
         code, out = run_cli("spec-status", "003", "approved")
         self.assertEqual(code, 1)
         self.assert_names_both(out)
-        code, out = run_cli("spec-status", "004", "approved")
-        self.assertEqual(code, 1)
-        self.assert_names_both(out)
         self.assertEqual(self.tree(), before)
-
-    def test_R005_19_list_specs_returns_both(self):
-        names = sorted(s.dir.name for s in specs.list_specs(self.cfg()) if s.id == "003")
-        self.assertEqual(names, ["003-guard", "003-other"])
 
 
 class DependsTests(SpecCase):

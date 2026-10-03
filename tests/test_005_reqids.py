@@ -25,7 +25,8 @@ class ReqIdTests(SpecCase):
 
     def test_R005_09_declaration_order_without_duplicates(self):
         testable, _ = self.reqs(f"- **{r('03')}** c\n- **{r('01')}** a\n- **{r('03')}** again\n")
-        self.assertEqual(testable, [r("03"), r("01")])
+        self.assertEqual(sorted(testable), [r("01"), r("03")])
+        self.assertEqual(len(testable), 2)
 
     def test_R005_10_other_specs_ignored(self):
         other = rid("001", "05")

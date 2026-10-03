@@ -61,6 +61,8 @@ class SpecStatusTests(SpecCase):
     def test_R005_06_set_status_ignores_chaos(self):
         self.write("agentkit.toml", '[kit]\nprofile = "fixture"\n\n[chaos]\nenabled = true\n')
         os.environ["AGENTKIT_AGENT"] = "1"
+        code, _ = run_cli("spec-status", "004", "done")  # precondition: chaos applies to 004
+        self.assertNotEqual(code, 0)
         for phase in ("approved", "tests-approved", "done"):
             specs.set_status(specs.find_spec(self.cfg(), "004"), phase)
             self.assertEqual(specs.find_spec(self.cfg(), "004").status, phase)

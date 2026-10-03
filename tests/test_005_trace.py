@@ -23,6 +23,13 @@ class TraceCase(SpecCase):
     def add_test(self, name, text):
         self.write(f"tests/{name}", text)
 
+    def assert_files(self, got, expected):
+        """Each reported file names one of the expected repo-relative paths."""
+        norm = sorted(str(f).replace("\\", "/") for f in got)
+        self.assertEqual(len(norm), len(expected), norm)
+        for path, want in zip(norm, sorted(expected)):
+            self.assertTrue(path == want or path.endswith("/" + want), (path, want))
+
 
 class TraceTests(TraceCase):
 
@@ -58,8 +65,8 @@ class TraceTests(TraceCase):
         self.write("docs/notes.md", f"{r('04')}\n")
         res = trace.trace_specs(self.cfg(), "004")[0]
         self.assertEqual(sorted(res.covered), [r("01"), r("02")])
-        self.assertEqual(res.covered[r("01")], ["tests/unit/test_a.py"])
-        self.assertEqual(res.covered[r("02")], ["app/src/test/BTest.kt"])
+        self.assert_files(res.covered[r("01")], ["tests/unit/test_a.py"])
+        self.assert_files(res.covered[r("02")], ["app/src/test/BTest.kt"])
         self.assertEqual(res.missing, [r("04")])
 
     def test_R005_13_build_output_ignored(self):
@@ -184,6 +191,13 @@ class TraceTests(TraceCase):
         self.assertEqual(code, 0, out)
         self.assertNotIn("spec 004", out)
 
+    def test_R005_10_other_spec_ids_in_tests_ignored(self):
+        self.spec004()
+        self.add_test("a.py", f"{r('01')} {rid('006', '01')} {rid('040', '01')}\n")
+        res = trace.trace_specs(self.cfg(), "004")[0]
+        self.assertEqual(list(res.covered), [r("01")])
+        self.assertEqual(res.unknown, {})
+
     def test_R005_13_result_fields(self):
         self.spec004()
         self.add_test("a.py", f"{r('01')}\n")
@@ -191,8 +205,9 @@ class TraceTests(TraceCase):
         res = trace.trace_specs(self.cfg(), "004")[0]
         self.assertEqual(res.spec, "004")
         self.assertEqual(res.required, [r("01"), r("02"), rid("004", "04")])
-        self.assertEqual(sorted(res.covered[r("01")]), ["tests/a.py", "tests/b.py"])
-        self.assertEqual(res.unknown, {r("09"): ["tests/b.py"]})
+        self.assert_files(res.covered[r("01")], ["tests/a.py", "tests/b.py"])
+        self.assertEqual(list(res.unknown), [r("09")])
+        self.assert_files(res.unknown[r("09")], ["tests/b.py"])
         self.assertEqual(res.missing, [r("02"), rid("004", "04")])
         self.assertFalse(res.ok)
 

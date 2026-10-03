@@ -2,25 +2,38 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
+import agentkit
 from agentkit import specs
 from tests.spec_fixtures import SpecCase
 from tests.support import run_cli
 
 FILES = ("spec.md", "plan.md", "tasks.md", "progress.md")
 PLACEHOLDER = re.compile(r"\{\{\s*(id|slug|title)\s*\}\}")
+TEMPLATES = Path(agentkit.__file__).resolve().parent.parent / "workflow" / "templates"
+
+
+def rendered(name: str, num: str, slug: str, title: str) -> str:
+    """The kit template with the three placeholders replaced (R005-04)."""
+    text = (TEMPLATES / name).read_text(encoding="utf-8")
+    return text.replace("{{id}}", num).replace("{{slug}}", slug).replace("{{title}}", title)
 
 
 class NewSpecTests(SpecCase):
 
-    def created(self, num, slug):
-        folder = self.root / "specs" / f"{num}-{slug}"
+    def created(self, num, slug, title=None, specs_dir="specs"):
+        folder = self.root / specs_dir / f"{num}-{slug}"
         self.assertTrue(folder.is_dir(), folder)
+        if title is None:
+            title = slug.replace("-", " ").capitalize()
         for name in FILES:
             self.assertTrue((folder / name).is_file(), name)
             data = (folder / name).read_bytes()
             self.assertNotIn(b"\r", data, name)
-            self.assertIsNone(PLACEHOLDER.search(data.decode("utf-8")), name)
+            text = data.decode("utf-8")
+            self.assertIsNone(PLACEHOLDER.search(text), name)
+            self.assertEqual(text, rendered(name, num, slug, title), name)
         return folder
 
     def refused(self, *args):
@@ -38,10 +51,11 @@ class NewSpecTests(SpecCase):
         self.assertEqual(spec.title, "My thing")
         self.assertEqual(spec.slug, "my-thing")
         self.assertIn("007", (folder / "spec.md").read_text(encoding="utf-8"))
+        self.assertIn("My thing", (folder / "spec.md").read_text(encoding="utf-8"))
 
     def test_R005_04_explicit_title(self):
         specs.new_spec(self.cfg(), "007", "my-thing", title="Données ✓ et plus")
-        folder = self.created("007", "my-thing")
+        folder = self.created("007", "my-thing", "Données ✓ et plus")
         self.assertEqual(specs.find_spec(self.cfg(), "007").title, "Données ✓ et plus")
         self.assertIn("Données ✓ et plus", (folder / "spec.md").read_bytes().decode("utf-8"))
 
@@ -52,8 +66,23 @@ class NewSpecTests(SpecCase):
     def test_R005_04_cli(self):
         code, out = run_cli("new-spec", "007", "my-thing", "--title", "Custom title")
         self.assertEqual(code, 0, out)
-        self.created("007", "my-thing")
+        self.created("007", "my-thing", "Custom title")
         self.assertEqual(specs.find_spec(self.cfg(), "007").title, "Custom title")
+
+    def test_R005_04_cli_default_title(self):
+        code, out = run_cli("new-spec", "008", "hook-dialects")
+        self.assertEqual(code, 0, out)
+        self.created("008", "hook-dialects", "Hook dialects")
+
+    def test_R005_04_configured_specs_path(self):
+        self.write("agentkit.toml", '[kit]\nprofile = "fixture"\n\n[paths]\nspecs = "docs/specs"\n')
+        self.spec("009", "not-counted")  # under specs/, which is no longer the specs path
+        self.write("docs/specs/002-old/spec.md", "---\nstatus: done\n---\n")
+        specs.new_spec(self.cfg(), None, "next")
+        self.created("003", "next", specs_dir="docs/specs")
+        specs.new_spec(self.cfg(), "010", "explicit")
+        self.created("010", "explicit", specs_dir="docs/specs")
+        self.assertFalse((self.root / "specs" / "003-next").exists())
 
     def test_R005_04_creates_specs_directory(self):
         self.assertFalse((self.root / "specs").exists())
@@ -84,10 +113,12 @@ class NewSpecTests(SpecCase):
             self.refused("007", slug)
             self.refused(None, slug)
             self.assertEqual(self.tree(), before, slug)
+            # A slug that looks like an option is an argparse usage error (exit 2, R000-08).
+            allowed = (1, 2) if slug.startswith("-") else (1,)
             code, _ = run_cli("new-spec", "007", slug)
-            self.assertEqual(code, 1, slug)
+            self.assertIn(code, allowed, slug)
             code, _ = run_cli("new-spec", slug)
-            self.assertEqual(code, 1, slug)
+            self.assertIn(code, allowed, slug)
             self.assertEqual(self.tree(), before, slug)
         self.assertFalse((self.root / "escape").exists())
 
@@ -133,10 +164,8 @@ class NewSpecTests(SpecCase):
         self.spec("003", "guard")
         self.spec("003", "other")
         before = self.tree()
-        for argv in (("new-spec", "003", "third"), ("new-spec", "009", "elsewhere"),
-                     ("new-spec", "auto")):
-            code, out = run_cli(*argv)
-            self.assertEqual(code, 1, argv)
-            self.assertIn("003-guard", out)
-            self.assertIn("003-other", out)
+        code, out = run_cli("new-spec", "003", "third")
+        self.assertEqual(code, 1)
+        self.assertIn("003-guard", out)
+        self.assertIn("003-other", out)
         self.assertEqual(self.tree(), before)

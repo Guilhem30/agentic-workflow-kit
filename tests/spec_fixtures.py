@@ -31,9 +31,12 @@ class SpecCase(RepoTestCase):
         return self.root / "specs" / f"{num}-{slug}"
 
     def tree(self) -> dict[str, bytes]:
-        """Every file under the root except .git, as {relative path: bytes}."""
+        """Every file and directory under the root except .git, as {relative path: bytes, or
+        None for a directory}."""
         out = {}
         for p in sorted(self.root.rglob("*")):
-            if p.is_file() and ".git" not in p.relative_to(self.root).parts:
-                out[p.relative_to(self.root).as_posix()] = p.read_bytes()
+            rel = p.relative_to(self.root)
+            if ".git" in rel.parts:
+                continue
+            out[rel.as_posix()] = p.read_bytes() if p.is_file() else None
         return out
