@@ -487,6 +487,81 @@ def _braces(word: str, limit: int = 64) -> list[str]:
     return out + todo
 
 
+def _copy_args_posix(rest: list[str]) -> tuple[str | None, list[str], bool]:
+    """cp/mv/install/ln and cmd.exe copiers: (target directory, sources, recursive)."""
+    dest, sources, recursive = None, [], False
+    i = 0
+    while i < len(rest):
+        w = rest[i]
+        if w.startswith("--"):
+            if w == "--target-directory" and i + 1 < len(rest):
+                dest = rest[i + 1]
+                i += 1
+            elif w.startswith("--target-directory="):
+                dest = w.split("=", 1)[1]
+            elif w in ("--recursive", "--archive"):
+                recursive = True
+        elif w.startswith("-") and len(w) > 1:
+            flags = w[1:]
+            if "t" in flags:  # -t DIR, -tDIR, -vt DIR
+                value = flags[flags.index("t") + 1:]
+                if value:
+                    dest = value
+                elif i + 1 < len(rest):
+                    dest = rest[i + 1]
+                    i += 1
+                flags = flags[:flags.index("t")]
+            recursive = recursive or any(c in flags for c in "rRa")
+        elif w.lower() in ("/s", "/e"):
+            recursive = True
+        else:
+            sources.append(w)
+        i += 1
+    return dest, sources, recursive
+
+
+_PS_SOURCE_PARAMS = ("-path", "-literalpath")
+_PS_VALUE_PARAMS = ("-filter", "-include", "-exclude", "-credential", "-fromsession",
+                    "-tosession")
+
+
+def _ps_param(word: str, names) -> str | None:
+    """The PowerShell parameter `word` abbreviates, among `names`."""
+    low = word.lower()
+    hits = [n for n in names if len(low) >= 2 and n.startswith(low)]
+    return hits[0] if len(hits) == 1 else None
+
+
+def _copy_args_powershell(rest: list[str]) -> tuple[str | None, list[str], bool]:
+    """Copy-Item/Move-Item: (destination, sources, recursive)."""
+    dest, sources, recursive = None, [], False
+    i = 0
+    while i < len(rest):
+        w = rest[i]
+        if w.startswith("-") and len(w) > 1:
+            name, _, attached = w.partition(":")
+            if _ps_param(name, ("-destination",)):
+                if attached:
+                    dest = attached
+                elif i + 1 < len(rest):
+                    dest = rest[i + 1]
+                    i += 1
+            elif _ps_param(name, _PS_SOURCE_PARAMS):
+                if attached:
+                    sources.append(attached)
+                elif i + 1 < len(rest):
+                    sources.append(rest[i + 1])
+                    i += 1
+            elif _ps_param(name, _PS_VALUE_PARAMS):
+                i += 0 if attached else 1
+            elif _ps_param(name, ("-recurse",)):
+                recursive = True
+        else:
+            sources.append(w)
+        i += 1
+    return dest, sources, recursive
+
+
 def _unknown_dir(target: str) -> bool:
     return target == "-" or bool(_UNKNOWN_DIR.search(target)) or "$(" in target
 
@@ -546,7 +621,7 @@ class _Shell:
     def _forbidden_kit(self, command: str, tokens: list[str]) -> None:
         """R003-13 on the whole text, quotes and all, so that a command hidden in a string
         (`python -c "os.system('agentkit lock unfreeze …')"`) counts too."""
-        text = re.sub(r"\s+", " ", re.sub(r"['\"`]", "", command.replace("\\", "/"))).lower()
+        text = re.sub(r"\s+", " ", re.sub(r"['\"`\\]", "", command)).lower()
         if "agentkit" not in text:
             return
         words = text.split()
@@ -587,7 +662,7 @@ class _Shell:
             for arg in _args(rest):
                 self.write_arg(arg, name in _DESTRUCTIVE, text)
             if name in _COPIERS:
-                self.copy_into(rest, text)
+                self.copy_into(name, rest, text)
         if _INTERPRETERS.match(name):
             self.interpreter(name, rest, text)
 
@@ -756,26 +831,11 @@ class _Shell:
                 self.deny(f"`{text}` would remove {shown}, which contains {held}; "
                           f"{_RESTORE_HINT}")
 
-    def copy_into(self, rest: list[str], text: str) -> None:
+    def copy_into(self, name: str, rest: list[str], text: str) -> None:
         """`cp SRC… DIR`, `cp -t DIR SRC…`, `Copy-Item SRC -Destination DIR`: the file that
         lands in DIR is a write too."""
-        dest = None
-        sources: list[str] = []
-        i = 0
-        while i < len(rest):
-            w = rest[i]
-            low = w.lower()
-            if low in ("-t", "--target-directory", "-destination") and i + 1 < len(rest):
-                dest = rest[i + 1]
-                i += 2
-                continue
-            if low.startswith("--target-directory="):
-                dest = w.split("=", 1)[1]
-            elif re.fullmatch(r"-[A-Za-z]*t.+", w) and not w.startswith("--"):
-                dest = w[w.index("t") + 1:]
-            elif not w.startswith("-") and w != "--":
-                sources.append(w)
-            i += 1
+        parse = _copy_args_powershell if name in _PS_WRITERS else _copy_args_posix
+        dest, sources, recursive = parse(rest)
         if dest is None and len(sources) >= 2:
             dest = sources.pop()
         if dest is None:
@@ -801,7 +861,7 @@ class _Shell:
                 landed = f"{full}/{name}"
                 self.write_arg(landed, False, text)
                 landed_rel = self.ctx.root.rel(landed, self.cwd)
-                if landed_rel is not None and self.ctx.holds_protected(landed_rel):
+                if recursive and landed_rel is not None and self.ctx.holds_protected(landed_rel):
                     self.deny(f"`{text}` would copy over {landed_rel}, which contains "
                               f"{self.ctx.holds_protected(landed_rel)}; {_RESTORE_HINT}")
 
