@@ -150,7 +150,7 @@ def cmd_lock(args) -> int:
 def cmd_spec_status(args) -> int:
     from agentkit import specs
     cfg = load_config()
-    dup = specs.duplicates(cfg, args.id)
+    dup = specs._duplicates(cfg, args.id)
     if dup:
         print(f"duplicate spec number {args.id}: " + ", ".join(s.dir.name for s in dup))
         return 1
@@ -158,7 +158,13 @@ def cmd_spec_status(args) -> int:
     if spec is None:
         print(f"spec {args.id} does not exist")
         return 1
+    if not spec.spec_md.is_file():
+        print(f"spec {args.id}: {spec.dir.name}/spec.md does not exist")
+        return 1
     new = args.status
+    if spec.status == specs.DROPPED:
+        print(f"spec {args.id} is dropped, a terminal phase: its status no longer changes")
+        return 1
     if new == "frozen":
         print("`frozen` is set only by `agentkit lock freeze --spec NNN` (002)")
         return 1
@@ -166,7 +172,10 @@ def cmd_spec_status(args) -> int:
         print(f"unknown phase {new!r}; phases: {', '.join(specs.PHASES)}, {specs.DROPPED}")
         return 1
     if new == specs.DROPPED and spec.status not in ("draft", "approved", "tests-draft"):
-        print(f"spec {args.id} is {spec.status}: the owner must unfreeze it before dropping it")
+        if spec.status in specs.PHASES:
+            print(f"spec {args.id} is {spec.status}: the owner must unfreeze it before dropping it")
+        else:
+            print(f"spec {args.id} has the unknown status {spec.status!r}; fix spec.md first")
         return 1
     if new in ("approved", "tests-approved", "done"):
         from agentkit import chaos

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from agentkit import _git, specs
 from agentkit.util import glob_match
 
-TRACED_PHASES = ("tests-draft", "tests-approved", "frozen", "done")
+_TRACED_PHASES = ("tests-draft", "tests-approved", "frozen", "done")
 
 
 @dataclass
@@ -26,7 +26,7 @@ class TraceResult:
         return not self.missing
 
 
-class TraceError(Exception):
+class _TraceError(Exception):
     """A spec-tree problem (R005-16, R005-19, R005-20); the CLI exits 1."""
 
 
@@ -49,7 +49,7 @@ def _test_ids(cfg) -> dict[str, list[str]]:
     return found
 
 
-def check_tree(cfg, only: str | None = None) -> list[str]:
+def _check_tree(cfg, only: str | None = None) -> list[str]:
     """Duplicate numbers (R005-19) and bad `depends` (R005-20); problems as text."""
     all_specs = specs.list_specs(cfg)
     by_id: dict[str, list] = {}
@@ -95,13 +95,15 @@ def trace_specs(cfg, spec_id=None) -> list[TraceResult]:
     if spec_id is not None:
         spec = specs.find_spec(cfg, spec_id)
         if spec is None:
-            raise TraceError(f"spec {spec_id} does not exist")
+            raise _TraceError(f"spec {spec_id} does not exist")
         chosen = [spec]
     else:
-        chosen = [s for s in specs.list_specs(cfg) if s.status in TRACED_PHASES]
+        chosen = [s for s in specs.list_specs(cfg) if s.status in _TRACED_PHASES]
     ids = _test_ids(cfg)
     results = []
     for spec in chosen:
+        if not spec.spec_md.is_file():
+            raise _TraceError(f"spec {spec.id}: {spec.dir.name}/spec.md does not exist")
         required, excluded = specs.spec_requirements(cfg, spec)
         res = TraceResult(spec=spec.id, required=required)
         for rid, files in ids.items():
@@ -128,12 +130,12 @@ def format_results(results) -> list[str]:
 
 def _trace_command(cfg, spec_id: str | None = None) -> tuple[int, list[str]]:
     """What `agentkit trace [--spec NNN]` prints and its exit code (R005-12 to R005-20)."""
-    problems = check_tree(cfg, only=spec_id)
+    problems = _check_tree(cfg, only=spec_id)
     if problems:
         return 1, problems
     try:
         results = trace_specs(cfg, spec_id)
-    except TraceError as exc:
+    except _TraceError as exc:
         return 1, [str(exc)]
     if not results:
         return 0, ["no spec in phase tests-draft or later; nothing to trace"]
