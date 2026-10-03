@@ -39,7 +39,7 @@ def _line_one(cfg) -> tuple[str, bool]:
     except (lock.LockError, ConfigError, OSError, ValueError) as exc:
         frozen, state = 0, f"BROKEN ({' '.join(str(exc).split())})"
     line = f"agentkit: profile {profile} | frozen files: {frozen} | lock: {state}"
-    suffix = chaos.status_suffix(cfg)
+    suffix = re.sub(r"\s+", " ", chaos.status_suffix(cfg))
     if len(line + suffix) > _MAX_CHARS and suffix.startswith(_BROKEN):
         msg = " ".join(suffix[len(_BROKEN):-1].split())
         room = _MAX_CHARS - len(line) - len(_BROKEN) - 2
