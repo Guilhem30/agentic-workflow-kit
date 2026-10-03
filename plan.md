@@ -35,8 +35,11 @@ speed much.
 - **Stubs** in `agentkit/` (`config.py`, `lock.py`, `cli.py`, `util.py`) raise
   `NotImplementedError("<REQ-ID>")`. The suite runs 151 tests, and all of them currently error
   on those stubs. That is the expected red state.
-- **`spikes/prototype/`** holds unreviewed code written straight from an early draft of this plan. It is reference
-  material only. Nothing in it ships.
+- **Bootstrap instance** (`docs/adr/0001-bootstrap-instance.md`): the repo has hand-written
+  `AGENTS.md`, `CLAUDE.md`, skills, review roles, Claude settings and `agentkit.toml`, so the kit
+  is built with its own practices before `install` exists. The state of each active spec lives
+  in its `progress.md`. Specs 001 and 002 are in phase `tests-draft`.
+- The early prototype spike was deleted. It is still in git history (commit `af0a18a`).
 
 ## Research findings (condensed)
 
@@ -219,7 +222,6 @@ Each step follows the per-feature cycle below. Order follows `specs/README.md`.
 
 1. **Gate: approve the 001/002 tests** (now). Then implement 001 and 002, plus the 005 status
    functions they need (`specs.PHASES`, `find_spec`, `set_status`), until those tests pass.
-   Use `spikes/prototype/` as reference only.
 2. **Bootstrap freeze:** you run the kit's own `lock freeze` on the 001/002 tests and on
    `tests/support.py` (by path). From here the kit protects its own tests.
 3. **Core:** 003 guard, 005 specs-and-trace.
@@ -231,7 +233,8 @@ Each step follows the per-feature cycle below. Order follows `specs/README.md`.
    016 Pi. Each against current official docs, each with conformance tests.
 7. **017 profiles, 018 githooks and CI.**
 8. **019 self-hosting:** the kit installs itself (`--self --profile python-unittest
-   --adapters claude-code --ci github --ci-os linux,windows,macos`), README and adapter matrix.
+   --adapters claude-code --ci github --ci-os linux,windows,macos --models kit`), README and
+   adapter matrix. It replaces the hand-written bootstrap instance (ADR 0001).
 
 Commits follow the pattern so far: `spec(NNN)`, `test(NNN)`, `feat(NNN)`, `chore:`. I commit
 only what you have agreed to at each gate.
