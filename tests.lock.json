@@ -85,6 +85,10 @@
       "sha256": "90ed58347976d323a9e028230bc92b3d5344fb9c580b7a1d89e80589e4e346a6",
       "spec": "005"
     },
+    "tests/test_007_runtests.py": {
+      "sha256": "a8ac9642ae5930a8e7858fbc2d48050a42276899083bb0f4801fea31178bb6e0",
+      "spec": "007"
+    },
     "tests/test_020_approve.py": {
       "sha256": "5c536925fc5685e9f4577a751fc0bf308dc59f8bd01ccfbe301987cc12f13f4b",
       "spec": "020"
