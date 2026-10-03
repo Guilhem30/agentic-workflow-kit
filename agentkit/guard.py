@@ -82,7 +82,7 @@ _PS_WRITERS = {"set-content", "add-content", "out-file", "remove-item", "move-it
                "new-item", "clear-content", "rename-item",
                "sc", "ac", "ri", "mi", "cpi", "ni", "rni", "clc"}
 _WRITERS = _POSIX_WRITERS | _CMD_WRITERS | _PS_WRITERS
-_COPIERS = {"cp", "mv", "install", "ln", "copy", "move", "xcopy", "copy-item", "cpi",
+_COPIERS = {"cp", "mv", "install", "ln", "copy", "move", "xcopy", "robocopy", "copy-item", "cpi",
             "move-item", "mi"}
 _DESTRUCTIVE = {"rm", "rmdir", "rd", "del", "erase", "remove-item", "ri", "mv", "move",
                 "move-item", "mi", "shred"}
@@ -520,6 +520,17 @@ def _copy_args_posix(rest: list[str]) -> tuple[str | None, list[str], bool]:
     return dest, sources, recursive
 
 
+def _copy_args_cmd(name: str, rest: list[str]) -> tuple[str | None, list[str], bool]:
+    """copy/move/xcopy/robocopy: /X[:v] switches anywhere; SRC then DEST; robocopy's later
+    arguments are file names, which land in DEST."""
+    positional = [w for w in rest if not re.fullmatch(r"/[A-Za-z]{1,8}(?::.*)?|/[0-9-]+", w)]
+    if len(positional) < 2:
+        return None, positional, False
+    if name == "robocopy":
+        return positional[1], positional[2:], False
+    return positional[-1], positional[:-1], False
+
+
 _PS_SOURCE_PARAMS = ("-path", "-literalpath")
 _PS_VALUE_PARAMS = ("-filter", "-include", "-exclude", "-credential", "-fromsession",
                     "-tosession")
@@ -834,12 +845,26 @@ class _Shell:
     def copy_into(self, name: str, rest: list[str], text: str) -> None:
         """`cp SRC… DIR`, `cp -t DIR SRC…`, `Copy-Item SRC -Destination DIR`: the file that
         lands in DIR is a write too."""
-        parse = _copy_args_powershell if name in _PS_WRITERS else _copy_args_posix
-        dest, sources, recursive = parse(rest)
+        if name in _PS_WRITERS or any(
+                _ps_param(w.partition(":")[0], ("-destination", *_PS_SOURCE_PARAMS))
+                for w in rest if w.startswith("-")):  # `cp` and `copy` alias Copy-Item
+            dest, sources, recursive = _copy_args_powershell(rest)
+        elif name in ("xcopy", "robocopy", "copy", "move"):
+            dest, sources, recursive = _copy_args_cmd(name, rest)
+        else:
+            dest, sources, recursive = _copy_args_posix(rest)
         if dest is None and len(sources) >= 2:
             dest = sources.pop()
         if dest is None:
             return
+        if name in ("xcopy", "robocopy"):
+            recursive = True  # they copy a directory's contents into the destination
+            if self.cwd is not None or _is_abs(_norm(dest)):
+                dest_rel = self.ctx.root.rel(dest, self.cwd or self.ctx.root.text)
+                if dest_rel is not None and self.ctx.holds_protected(dest_rel):
+                    self.deny(f"`{text}` copies into {dest_rel or 'the repository root'}, "
+                              f"which contains {self.ctx.holds_protected(dest_rel)}; "
+                              f"{_RESTORE_HINT}")
         if self.cwd is None and not _is_abs(_norm(dest)):
             for src in sources:  # unknown directory: only basenames can be compared (R003-24)
                 name = _norm(src).rstrip("/").rsplit("/", 1)[-1]
@@ -857,13 +882,28 @@ class _Shell:
             return
         for src in sources:
             name = _norm(src).rstrip("/").rsplit("/", 1)[-1]
-            if name and not any(c in name for c in "*?["):
+            if name and any(c in name for c in "*?["):
+                self.glob_into(rel, name, text)
+            elif name:
                 landed = f"{full}/{name}"
                 self.write_arg(landed, False, text)
                 landed_rel = self.ctx.root.rel(landed, self.cwd)
                 if recursive and landed_rel is not None and self.ctx.holds_protected(landed_rel):
                     self.deny(f"`{text}` would copy over {landed_rel}, which contains "
                               f"{self.ctx.holds_protected(landed_rel)}; {_RESTORE_HINT}")
+
+    def glob_into(self, dest_rel: str, name: str, text: str) -> None:
+        """A glob source copied into `dest_rel`: deny when it could land on a frozen file."""
+        rx = glob_to_regex(name)
+        prefix = (dest_rel.casefold() + "/") if dest_rel else ""
+        for key, path in self.ctx.frozen.items():
+            if key.startswith(prefix):
+                first = key[len(prefix):].split("/", 1)[0]
+                if rx.fullmatch(first):
+                    self.deny(f"`{text}`: the glob {name} copied into "
+                              f"{dest_rel or 'the repository root'} may overwrite {path}; "
+                              f"{_RESTORE_HINT}")
+                    return
 
     def glob_arg(self, pattern: str, destructive: bool, text: str) -> None:
         ctx = self.ctx
