@@ -11,4 +11,4 @@
 - [x] T9 Degraded mode (R003-27, R003-29 to R003-31) → `tests.test_003_degraded`
 - [x] T10 Performance (R003-28) → `tests.test_003_perf`
 - [x] T11 020's guard rules pass (`tests.test_020_guard_status`, guard classes)
-- [ ] T12 Full suite; `impl-reviewer`; `feat(003)`; `chaos approve 003 done`
+- [x] T12 Full suite; `impl-reviewer`; `feat(003)`; `chaos approve 003 done`
