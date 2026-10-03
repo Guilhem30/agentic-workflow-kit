@@ -14,6 +14,7 @@
   `tests/test_002_chaos.py`. test-auditor: needs changes (15 findings, all fixed but one that
   contradicted R020-08), second pass `verdict: ready to freeze`. Spec moved to `tests-draft`.
   Red state: stubs raise NotImplementedError; R020-31 and R002-33/34 fail on exit codes.
+- 2026-10-03: owner enabled `[chaos]` (ed186c8) and delegated this gate ("in chaos mode you shouldn't need me to approve freeze"). As the one bootstrap exception, the agent set `tests-approved` and ran `lock freeze --spec 020` (6 files). Every later gate goes through `chaos approve`.
 
 <!-- agentkit:snapshot:begin -->
 - 2026-10-03 (UTC), phase `tests-draft`

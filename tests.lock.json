@@ -2,6 +2,10 @@
   "version": 1,
   "algorithm": "sha256-lf",
   "files": {
+    "tests/chaos_fixtures.py": {
+      "sha256": "b973c1586f5ca2c52a47392f499a2c3c3af0a5d4621789f8e697a690f0ae4fc5",
+      "spec": "020"
+    },
     "tests/support.py": {
       "sha256": "c466b2a27082d505eb82099c4cebb7e35c47aa854247d1fc16beb6514f9427ca",
       "spec": "002"
@@ -36,6 +40,26 @@
     "tests/test_002_verify.py": {
       "sha256": "d032b25dbb49233acec979c98c925cae2408bbc7ae74b0a4450e0c5d64c899a1",
       "spec": "002"
+    },
+    "tests/test_020_approve.py": {
+      "sha256": "5c536925fc5685e9f4577a751fc0bf308dc59f8bd01ccfbe301987cc12f13f4b",
+      "spec": "020"
+    },
+    "tests/test_020_config.py": {
+      "sha256": "6d63f85282566321155187f13c978038613d3e67d83f7c84d3cd6c17fee4aeec",
+      "spec": "020"
+    },
+    "tests/test_020_guard_status.py": {
+      "sha256": "921293f91bf048ff05a55e68874c792bd21d87d33bf10b14930199092bed63bf",
+      "spec": "020"
+    },
+    "tests/test_020_log_verdict.py": {
+      "sha256": "514ed628531ae9dea72b2cd4326fdfe3164f8fc937445c41ba1e5e59160330ca",
+      "spec": "020"
+    },
+    "tests/test_020_unfreeze_clear.py": {
+      "sha256": "7f0dab48665fada9bbdf4c1f2b8b93e4eebdd85917e63414d9387b1887410500",
+      "spec": "020"
     }
   }
 }
