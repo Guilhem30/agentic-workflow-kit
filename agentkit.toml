@@ -7,7 +7,6 @@ version = "0.0.0"
 # overrides the generic defaults.
 profile = "generic"
 adapters = ["claude-code"]
-python = "python3"
 self_hosted = true
 
 [ci]
