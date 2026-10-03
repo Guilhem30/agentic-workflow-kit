@@ -123,7 +123,8 @@ commands.
 agentkit/guard.py:
   ALLOW, ASK, DENY = "allow", "ask", "deny"
   @dataclass WriteAction(paths: list[str]); ReadAction(paths: list[str]); ShellAction(command: str)
-  @dataclass Decision: verdict: str; reasons: list[str]; reason -> str (joined "; ")
+  @dataclass Decision: verdict: str; reasons: list[str]; degraded: bool = False
+                     reason -> str (joined "; ")
   def evaluate(cfg, actions: list, cwd: str | None = None) -> Decision
 ```
 

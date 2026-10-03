@@ -34,7 +34,9 @@ defined below.
   `agentkit status --format F` shall accept F in {`claude`, `codex`, `dsh`, `opencode`, `pi`}.
   An unknown F exits 2.
 - **R004-02** These commands shall read one JSON payload from stdin. An empty, non-JSON or
-  non-object payload is treated as `{}`.
+  non-object payload is treated as `{}`. For `guard`, such a payload shall also print
+  `agentkit guard error (allowing): <message>` on stderr, since there is nothing to classify
+  (R003-31).
 
 ### Mapping tool calls to actions
 - **R004-03** The tool name shall be compared case-insensitively, after stripping any `mcp__…__`
@@ -76,6 +78,11 @@ defined below.
   The output is always `{"decision": "allow"|"ask"|"deny", "reason": str}` with exit 0.
 - **R004-14** For `opencode`, ask shall be turned into deny as in R004-12. For `pi`, ask is kept.
 
+- **R004-22** When the guard's Decision is degraded (003 degraded mode, `Decision.degraded`),
+  an allow shall exit 1 with the guard's message on stderr in every format, instead of the exit 0
+  of R004-10, R004-12 and R004-13. The tools treat exit 1 as a non-blocking error (R003-30).
+  A degraded deny uses the format's normal deny response.
+
 ### End-of-turn verify
 - **R004-15** `verify --format F` shall run `lock verify` (002). Its problems are each violated
   file, plus a hint line about `lock restore` or asking the owner.
@@ -109,7 +116,7 @@ agentkit/payloads/base.py:
   @dataclass Response(stdout: str = "", stderr: str = "", code: int = 0)
   class HookFormat: name; supports_ask
       parse(payload: dict) -> (list[Action], cwd: str | None)
-      pre_response(decision) -> Response
+      pre_response(decision) -> Response   # reads decision.degraded (R004-22)
       stop_response(payload: dict, problems: list[str]) -> Response
       session_response(text: str) -> Response
   class PluginFormat(HookFormat)
@@ -127,6 +134,8 @@ Live end-to-end runs inside each tool. These are optional manual checks (019).
 - The plugin protocol for OpenCode and Pi (R004-13).
 - The anti-loop rule (R004-17).
 - `status --format` for session-start hooks.
+- R004-22 and the stderr warning in R004-02: owner's decision of 2026-10-03 to honor R003-30 and
+  R003-31 (003's owner question 1). 003's `Decision` gained `degraded: bool = False`.
 
 ## Open questions
 

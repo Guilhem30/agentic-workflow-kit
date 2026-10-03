@@ -34,6 +34,7 @@ class ShellAction:
 class Decision:
     verdict: str
     reasons: list[str] = field(default_factory=list)
+    degraded: bool = False  # set by degraded mode; 004 exits 1 on a degraded allow (R004-22)
 
     @property
     def reason(self) -> str:
@@ -1018,7 +1019,9 @@ def _degraded(cfg, actions: list, cwd: str | None, message: str) -> Decision:
             allowed = True
     if allowed:
         print(f"agentkit guard error (allowing): {message}", file=sys.stderr)
-    return Decision(DENY, [reason]) if denied else Decision(ALLOW, [])
+    if denied:
+        return Decision(DENY, [reason], degraded=True)
+    return Decision(ALLOW, [f"agentkit guard error (allowing): {message}"], degraded=True)
 
 
 def evaluate(cfg, actions: list, cwd: str | None = None) -> Decision:

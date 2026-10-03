@@ -23,8 +23,8 @@
 - Tests: all 003 tests pass; 020's guard classes pass. Full suite: only 020's status classes
   fail (16 errors on the 006 stub).
 - **Owner questions (open):**
-  1. R003-30/31 vs 004: R004-02 turns a bad payload into `{}` silently, R004-10 says allow
-     exits 0, and `Decision` has no degraded flag. Settle before 004's tests freeze.
+  1. ~~R003-30/31 vs 004~~ settled 2026-10-03: the owner chose to amend 004 (R004-02 warns on
+     stderr, new R004-22: a degraded allow exits 1). `Decision` gained `degraded: bool = False`.
   2. R003-13 is applied literally (quotes and backslashes removed), so a grep or commit message
      containing "agentkit" and "lock unfreeze" is denied. Narrow the requirement?
   3. Beyond R003-16's lists the guard also skips shell keywords (`if then else elif do while
