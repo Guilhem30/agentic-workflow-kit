@@ -66,6 +66,12 @@ def cmd_lock(args) -> int:
         if not args.paths and args.spec is None and not args.all:
             print("lock freeze needs PATH..., --spec NNN or --all", file=sys.stderr)
             return 2
+        if args.spec is not None:
+            from agentkit import chaos
+            refusal = chaos._agent_gate_refusal(cfg, args.spec, "frozen")
+            if refusal:
+                print(refusal[1], file=sys.stderr)
+                return refusal[0]
         result = lock.freeze(cfg, paths=_abs(args.paths) if args.paths else None,
                              spec=args.spec, all_candidates=args.all, force=args.force)
         if result.errors:
@@ -162,6 +168,12 @@ def cmd_spec_status(args) -> int:
     if new == specs.DROPPED and spec.status not in ("draft", "approved", "tests-draft"):
         print(f"spec {args.id} is {spec.status}: the owner must unfreeze it before dropping it")
         return 1
+    if new in ("approved", "tests-approved", "done"):
+        from agentkit import chaos
+        refusal = chaos._agent_gate_refusal(cfg, args.id, new)
+        if refusal:
+            print(refusal[1], file=sys.stderr)
+            return refusal[0]
     specs.set_status(spec, new)
     print(f"spec {args.id}: status {new}")
     return 0

@@ -455,4 +455,13 @@ def audit(cfg, base="HEAD", staged=False) -> list[str]:
             elif current[rel].get("sha256") != entry.get("sha256"):
                 problems.append(f"{rel}: re-hashed in the lock since {base} without an "
                                 "unfreeze-log entry")
+    problems += _chaos_audit(cfg, base, staged)
     return problems
+
+
+def _chaos_audit(cfg, base, staged) -> list[str]:
+    """R002-33: when a chaos log exists (in the index with --staged), audit it too."""
+    from agentkit import chaos
+    rel = chaos._log_rel_lenient(cfg)
+    exists = (_git.staged(cfg.root, rel) is not None) if staged else (cfg.root / rel).is_file()
+    return chaos.audit(cfg, base=base, staged=staged) if exists else []
