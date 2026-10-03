@@ -13,8 +13,77 @@ targets Claude Code, Codex CLI, OpenCode, DeepSeek Harness and Pi, plus a tool-n
 Under construction, built with its own process.
 - Specs 000–019 are approved.
 - The tests for 001 (config) and 002 (test lock) are written and awaiting owner approval.
-- The `agentkit` CLI is still stubs, so there is no quickstart yet. Spec 019 adds the two-command
-  install, the command list and the adapter capability matrix.
+- The `agentkit` CLI is still stubs, so there is no install command yet. Spec 019 adds the
+  two-command install, the full command list and the adapter capability matrix. Until then, the
+  workflow below already works in this repository, using the manual stand-ins listed in
+  [`AGENTS.md`](AGENTS.md).
+
+## How the kit is used
+
+Two people share the work:
+- **You, the owner**, decide what gets built and approve every gate.
+- **The agent** (Claude Code, Codex, OpenCode, …) does the writing.
+
+Each feature is one spec, `specs/NNN-slug/`, and moves through these phases:
+
+| Phase | Who acts | What happens | Ends when |
+|---|---|---|---|
+| `draft` | agent, `/spec NNN` | Writes EARS requirements with IDs (`RNNN-MM`) and an exact API contract. A reviewer subagent checks them. | **you approve** the spec |
+| `approved` | agent, `/write-tests NNN` | Writes stubs and failing tests, one or more per requirement. An auditor subagent hunts for weak tests. | → `tests-draft` |
+| `tests-draft` | you | You read the tests. They are the contract the code must meet. | **you approve** the tests |
+| `tests-approved` | you, `/freeze NNN` | The tests are hashed into `tests.lock.json`. From now on, no tool may change them. | → `frozen` |
+| `frozen` | agent, `/implement NNN` | Implements task by task until the frozen tests pass. A reviewer subagent looks for test gaming. | → `done` |
+
+Between phases, run `/handoff NNN` and then clear the context (`/clear` in Claude Code). The
+next session resumes from `specs/NNN-*/progress.md`, not from chat history.
+
+**If a frozen test turns out to be wrong,** the agent must stop and tell you. Only you can
+unfreeze it, by running `agentkit lock unfreeze` in your own terminal. Every unfreeze is logged
+in `tests.unfreeze-log.md`.
+
+**Tools without slash commands** (Codex, OpenCode, Pi, …) read the same files. Instead of
+`/spec 003`, write "Follow `.agents/skills/spec/SKILL.md` for spec 003."
+
+## Prompting tips
+
+**Name the phase and the spec, and nothing more.** The skill already holds the procedure:
+`/implement 002` beats a paragraph that explains how to implement. Long prompts cost tokens
+and compete with the instructions the agent already has.
+
+**Approve gates in plain words, in the same conversation.** For example: "I approve spec 003",
+or "Tests for 002 approved." Agents may set `approved` or `tests-approved` only after you say
+so. Say "approved" only when you mean it.
+
+**Put intent into the spec, not the chat.** A requirement you mention only in chat is lost at
+the next `/clear`. Say instead: "Add a requirement to 003: the guard denies `git mv` of frozen
+files." Then it gets an ID, a test, and a place in the trace.
+
+**Point to files; don't paste them.** "Read R002-07 in `specs/002-test-lock/spec.md`" is
+cheaper and more exact than pasting the text. The same goes for logs: ask for a summary
+("have the summarizer digest the CI log"), not for the whole thing.
+
+**Ask for the trade-offs, not just the result.** When reviewing a spec, ask: "What did you
+decide that plan.md didn't? What are the open questions?" Every spec has sections for exactly
+this. Answer the open questions yourself rather than letting the agent guess.
+
+**Read the tests as an adversary before you approve them.** Ask the agent: "Which plausible
+wrong implementation would still pass these tests?" Frozen tests are the only oracle during
+implementation, so a gap here becomes a bug later.
+
+**Keep sessions to one phase.** Mixing "write the spec and start coding" in one session skips
+your gates and fills the context. If the agent proposes moving on, clear the context first.
+
+**When the agent is stuck on a test, don't tell it to "just make it pass".** Ask why it fails
+and whether the test or the code is wrong. If the test is wrong, that is your unfreeze
+decision, not the agent's.
+
+**Prefer precise requests over broad ones.** "Implement the next open task in `tasks.md`"
+works better than "finish 002". "Fix the failing `test_R002_11_*` tests" works better than
+"fix the tests".
+
+**Let model routing do its job.** Specs, tests and audits run on the strong model at high
+effort; implementation runs on the standard model; summaries run on the fast one. You don't
+need to ask for "think hard" in a spec session: the `/spec` skill already sets it.
 
 ## Where to look
 
