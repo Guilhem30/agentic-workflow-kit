@@ -59,7 +59,7 @@ _KEYWORDS = {"if", "then", "else", "elif", "do", "while", "until", "!", "{", "}"
 # Options of prefix words that take a value (`sudo -u bob rm x`).
 _PREFIX_VALUE_OPTIONS = {"sudo": {"-u", "-g", "-C", "-h", "-p", "-r", "-t", "-U", "--user",
                                   "--group", "--host", "--prompt", "--close-from"},
-                         "env": {"-u", "-C", "--unset", "--chdir"},
+                         "env": {"-u", "-C", "-S", "--unset", "--chdir", "--split-string"},
                          "xargs": {"-I", "-n", "-P", "-d", "-L", "-s", "-a", "-E", "-i",
                                    "--max-args", "--max-procs", "--delimiter", "--max-lines",
                                    "--max-chars", "--arg-file", "--eof", "--replace"},
@@ -131,8 +131,9 @@ def _inline(name: str, word: str) -> tuple[str | None, bool] | None:
             return next(g for g in m.groups() if g is not None), False
         return None
     elif family in ("perl", "ruby"):
-        m = re.fullmatch(r"-[a-zA-Z]*[eE](.*)", word, re.S) if not word.startswith(
-            ("-I", "-M", "-C", "-r")) else None
+        flags = "eE" if family == "perl" else "e"
+        m = re.fullmatch(rf"-[a-zA-Z]*?[{flags}](.*)", word, re.S) if not word.startswith(
+            ("-I", "-M", "-C", "-r", "-E" if family == "ruby" else "-I")) else None
     elif family == "php":
         m = re.fullmatch(r"-r(.*)", word, re.S)
     elif family == "pwsh":
@@ -147,6 +148,8 @@ def _inline(name: str, word: str) -> tuple[str | None, bool] | None:
     if not m:
         return None
     return (m.group(1) or None), False
+
+
 _NESTING_LIMIT = 4
 
 
@@ -528,8 +531,10 @@ class _Shell:
 
     def _split_string(self, words: list[str]) -> None:
         """`env -S 'cmd args'` runs its value as a command line."""
+        if not any(_command_name(w) == "env" for w in words):
+            return
         for i, w in enumerate(words[:-1]):
-            if _command_name(words[0]) == "env" and w in ("-S", "--split-string"):
+            if w in ("-S", "--split-string"):
                 self.nested(words[i + 1])
 
     def nested(self, script: str) -> None:
@@ -541,7 +546,7 @@ class _Shell:
     def _forbidden_kit(self, command: str, tokens: list[str]) -> None:
         """R003-13 on the whole text, quotes and all, so that a command hidden in a string
         (`python -c "os.system('agentkit lock unfreeze …')"`) counts too."""
-        text = re.sub(r"[\s'\"`]+", " ", command.replace("\\", "/")).lower()
+        text = re.sub(r"\s+", " ", re.sub(r"['\"`]", "", command.replace("\\", "/"))).lower()
         if "agentkit" not in text:
             return
         words = text.split()
@@ -564,10 +569,15 @@ class _Shell:
             self.git(rest, text)
         elif name == "eval":
             self.nested(" ".join(rest))
-        elif name == "cmd" and rest and rest[0].lower() in ("/c", "/k"):
-            self.nested(" ".join(rest[1:]))
-        elif name == "su" and "-c" in rest[:-1]:
-            self.nested(rest[rest.index("-c") + 1])
+        elif name == "cmd" and any(w.lower() in ("/c", "/k") for w in rest):
+            at = next(i for i, w in enumerate(rest) if w.lower() in ("/c", "/k"))
+            self.nested(" ".join(rest[at + 1:]))
+        elif name == "su":
+            for i, w in enumerate(rest):
+                if w in ("-c", "--command") and i + 1 < len(rest):
+                    self.nested(rest[i + 1])
+                elif w.startswith("--command="):
+                    self.nested(w.split("=", 1)[1])
         elif name in ("sed", "perl") and any(self._in_place(name, w) for w in rest):
             for arg in _args(rest):
                 self.write_arg(arg, False, text)
@@ -601,7 +611,7 @@ class _Shell:
         return bool(re.match(r"^-[A-Za-z]*i", word))
 
     def find(self, rest: list[str], text: str) -> None:
-        actions = {"-delete", "-exec", "-execdir"}
+        actions = {"-delete", "-exec", "-execdir", "-ok", "-okdir"}
         if not actions & set(rest):
             return
         destructive = "-delete" in rest
@@ -761,12 +771,22 @@ class _Shell:
                 continue
             if low.startswith("--target-directory="):
                 dest = w.split("=", 1)[1]
+            elif re.fullmatch(r"-[A-Za-z]*t.+", w) and not w.startswith("--"):
+                dest = w[w.index("t") + 1:]
             elif not w.startswith("-") and w != "--":
                 sources.append(w)
             i += 1
         if dest is None and len(sources) >= 2:
             dest = sources.pop()
-        if dest is None or self.cwd is None:
+        if dest is None:
+            return
+        if self.cwd is None and not _is_abs(_norm(dest)):
+            for src in sources:  # unknown directory: only basenames can be compared (R003-24)
+                name = _norm(src).rstrip("/").rsplit("/", 1)[-1]
+                if name.casefold() in self.ctx.frozen_names:
+                    self.deny(f"`{text}` may overwrite the frozen test file "
+                              f"{self.ctx.frozen_names[name.casefold()]} (working directory "
+                              f"unknown); {_RESTORE_HINT}")
             return
         full = _join(self.cwd, dest)
         rel = self.ctx.root.rel(full, self.cwd)
@@ -778,7 +798,12 @@ class _Shell:
         for src in sources:
             name = _norm(src).rstrip("/").rsplit("/", 1)[-1]
             if name and not any(c in name for c in "*?["):
-                self.write_arg(f"{full}/{name}", False, text)
+                landed = f"{full}/{name}"
+                self.write_arg(landed, False, text)
+                landed_rel = self.ctx.root.rel(landed, self.cwd)
+                if landed_rel is not None and self.ctx.holds_protected(landed_rel):
+                    self.deny(f"`{text}` would copy over {landed_rel}, which contains "
+                              f"{self.ctx.holds_protected(landed_rel)}; {_RESTORE_HINT}")
 
     def glob_arg(self, pattern: str, destructive: bool, text: str) -> None:
         ctx = self.ctx
