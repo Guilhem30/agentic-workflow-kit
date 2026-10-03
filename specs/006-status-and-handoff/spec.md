@@ -2,6 +2,7 @@
 id: "006"
 title: Status and handoff
 status: approved
+depends: ["002", "005"]
 ---
 
 # 006 Status and handoff
@@ -17,13 +18,16 @@ session-start `status` is at most 10 lines. `handoff` writes the resume point in
 ### status
 - **R006-01** `agentkit status` shall print at most 10 lines, each at most 200 characters.
 - **R006-02** Line 1 shall be `agentkit: profile <name> | frozen files: <n> | lock: <OK | VIOLATED (<k> file(s): run `agentkit lock verify`)>`.
-- **R006-03** status shall print one line per spec not in phase `done`, in ID order:
+- **R006-03** status shall print one line per spec not in phase `done` or `dropped`, in ID order:
   `spec NNN slug [phase] -> <next action>`, where the next action depends on the phase:
-  - `draft`: HUMAN reviews and approves;
+  - `draft`: run /spec NNN, then HUMAN approves;
   - `approved`: run /write-tests NNN;
   - `tests-draft`: HUMAN reviews the tests;
   - `tests-approved`: HUMAN runs /freeze NNN;
   - `frozen`: run /implement NNN.
+- **R006-13** For a spec in phase `frozen` with a `depends` entry (R005-20) whose spec is not
+  `done`, the next action shall be `blocked by NNN[, MMM]` instead of `run /implement NNN`.
+  Blocked specs are listed after the others.
 - **R006-04** For a spec in phase `frozen`, the line shall end with `(progress: <text>)` when
   `progress.md` has a line `**Next:** <text>`.
 - **R006-05** When there are more active specs than fit, status shall show as many as fit and a
@@ -68,6 +72,8 @@ agentkit/handoff.py: snapshot(cfg, spec_id, note="", next_step="", now=None) -> 
 
 - The exact status format, the progress `**Next:**` line, and the snapshot markers.
 - Suggesting `/kickoff` in a project with no spec (R006-07) (owner's request, 2026-10-03).
+- `/spec NNN` as the draft action, skipping `dropped`, and `blocked by` (R006-03, R006-13), so
+  reserved specs show when they can start (owner's request, 2026-10-03).
 
 ## Open questions
 

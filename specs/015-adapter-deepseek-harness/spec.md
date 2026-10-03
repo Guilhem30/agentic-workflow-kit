@@ -2,6 +2,7 @@
 id: "015"
 title: DeepSeek Harness adapter
 status: approved
+depends: ["013"]
 ---
 
 # 015 DeepSeek Harness adapter

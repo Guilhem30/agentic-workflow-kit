@@ -2,6 +2,7 @@
 id: "014"
 title: OpenCode adapter
 status: approved
+depends: ["004", "010", "011"]
 ---
 
 # 014 OpenCode adapter

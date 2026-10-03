@@ -2,6 +2,7 @@
 id: "003"
 title: Guard (tool-neutral pre-tool decisions)
 status: approved
+depends: ["001", "002"]
 ---
 
 # 003 Guard

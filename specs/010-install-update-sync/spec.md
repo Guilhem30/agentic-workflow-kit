@@ -2,6 +2,7 @@
 id: "010"
 title: Install, update and sync
 status: approved
+depends: ["001"]
 ---
 
 # 010 Install, update and sync

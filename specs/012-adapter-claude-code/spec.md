@@ -2,6 +2,7 @@
 id: "012"
 title: Claude Code adapter
 status: approved
+depends: ["004", "010", "011"]
 ---
 
 # 012 Claude Code adapter
@@ -48,8 +49,8 @@ and [statusline](https://code.claude.com/docs/en/statusline):
 ### CLAUDE.md (block, top)
 - **R012-07** The block shall start with the line `@AGENTS.md`, followed by at most 20 lines of
   Claude-only notes:
-  - skills are invoked as `/kickoff`, `/spec`, `/write-tests`, `/freeze` (owner only),
-    `/implement` and `/handoff`;
+  - skills are invoked as `/kickoff`, `/feature`, `/spec`, `/write-tests`, `/freeze` (owner
+    only), `/implement` and `/handoff`;
   - the review roles are subagents;
   - `/clear` goes between phases;
   - the compaction preferences (keep the spec ID, phase, failing tests and next task).

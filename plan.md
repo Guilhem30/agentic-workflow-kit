@@ -104,7 +104,8 @@ agentic-workflow-kit/
     templates/              AGENTS.md.tmpl, spec.md, plan.md, tasks.md, progress.md, adr.md
     roles/                  spec-writer, spec-reviewer, test-writer, test-auditor, implementer,
                             impl-reviewer, summarizer (model-neutral, each tagged with a tier)
-  skills/                   Agent Skills: kickoff/, spec/, write-tests/, freeze/, implement/, handoff/
+  skills/                   Agent Skills: kickoff/, feature/, spec/, write-tests/,
+                            freeze/, implement/, handoff/
   agentkit/                 Python package (`python -m agentkit …` or `.agentkit/bin/agentkit`)
     config.py lock.py guard.py specs.py trace.py status.py handoff.py runtests.py
     codemap.py lint_instructions.py install.py sync.py
@@ -126,7 +127,7 @@ agentic-workflow-kit/
 | `install`, `update`, `sync [--check]` | 010 | Install the core, templates, skills, githooks, CI and chosen adapters; update without overwriting your customisations (3-way via manifest); regenerate derived copies, `--check` fails on drift |
 | `lock freeze / verify / status / unfreeze / restore / audit` | 002 | SHA-256 per frozen file after CRLF→LF normalisation; owner-only unfreeze, logged to `tests.unfreeze-log.md` |
 | `guard`, `verify` | 003, 004 | Read a tool's hook payload, turn it into Write/Read/Shell actions, answer allow/ask/deny in that tool's format; end-of-turn lock check |
-| `new-spec`, `spec-status`, `trace` | 005 | Spec folders and phases, automatic numbering; every requirement ID of an approved spec appears in a test |
+| `new-spec`, `spec-status`, `trace` | 005 | Spec folders and phases (incl. `dropped`), automatic numbering, `depends`; every requirement ID of an approved spec appears in a test |
 | `status`, `handoff NNN` | 006 | ≤ 10-line session summary; `progress.md` so sessions can be cleared cheaply |
 | `test [scope]` | 007 | Run the profile's tests quietly, parse JUnit XML, print summary + failures (60-line cap) |
 | `codemap [--check]` | 008 | Compact `docs/CODEMAP.md` of modules, files and public symbols |
@@ -224,9 +225,10 @@ Each step follows the per-feature cycle below. Order follows `specs/README.md`.
    functions they need (`specs.PHASES`, `find_spec`, `set_status`), until those tests pass.
 2. **Bootstrap freeze:** you run the kit's own `lock freeze` on the 001/002 tests and on
    `tests/support.py` (by path). From here the kit protects its own tests.
-3. **Core:** 003 guard, 005 specs-and-trace.
-4. **Core services:** 004 hook dialects, 006 status/handoff, 007 test runner, 008 codemap,
-   009 lint-instructions.
+3. **Spec lifecycle first:** 005 specs-and-trace, then 006 status/handoff. They carry automatic
+   numbering, `dropped`, `depends` and the `blocked by` status, which back the `/kickoff` and
+   `/feature` skills already in use (owner's request, 2026-10-03). Then 003 guard.
+4. **Core services:** 004 hook dialects, 007 test runner, 008 codemap, 009 lint-instructions.
 5. **Distribution and content:** 010 install/update/sync, 011 workflow content (WORKFLOW.md,
    TOKEN-EFFICIENCY.md, templates, roles, skills).
 6. **Adapters:** 012 Claude Code first, then 013 Codex, 014 OpenCode, 015 DeepSeek Harness,

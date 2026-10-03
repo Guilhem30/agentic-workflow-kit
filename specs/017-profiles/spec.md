@@ -2,6 +2,7 @@
 id: "017"
 title: Language profiles
 status: approved
+depends: ["001"]
 ---
 
 # 017 Language profiles

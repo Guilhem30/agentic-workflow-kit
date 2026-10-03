@@ -2,6 +2,7 @@
 id: "008"
 title: Code map
 status: approved
+depends: ["001"]
 ---
 
 # 008 Code map

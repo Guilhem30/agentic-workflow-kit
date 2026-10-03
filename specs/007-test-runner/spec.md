@@ -2,6 +2,7 @@
 id: "007"
 title: Compact test runner (agentkit test)
 status: approved
+depends: ["001"]
 ---
 
 # 007 Compact test runner

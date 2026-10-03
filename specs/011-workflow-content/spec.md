@@ -2,6 +2,7 @@
 id: "011"
 title: Workflow content (process docs, templates, roles, skills)
 status: approved
+depends: ["005", "009"]
 ---
 
 # 011 Workflow content
@@ -13,7 +14,7 @@ The neutral content that every adapter wires in:
 - `workflow/TOKEN-EFFICIENCY.md` (Part B playbook);
 - `workflow/templates/`;
 - `workflow/roles/` (7 model-neutral role prompts, each with a tier);
-- `skills/` (6 Agent Skills: kickoff, spec, write-tests, freeze, implement, handoff).
+- `skills/` (7 Agent Skills: kickoff, feature, spec, write-tests, freeze, implement, handoff).
 
 Much of this content is prose, so many requirements here are `[manual]`. The structural ones are
 tested.
@@ -62,27 +63,34 @@ tested.
 - **R011-13** Project roles in `<paths.roles>/` shall override kit roles that have the same name.
 
 ### Skills
-- **R011-14** `skills/` shall contain `kickoff`, `spec`, `write-tests`, `freeze`, `implement` and
-  `handoff`.
+- **R011-14** `skills/` shall contain `kickoff`, `feature`, `spec`, `write-tests`, `freeze`,
+  `implement` and `handoff`.
   Each SKILL.md follows the Agent Skills standard: `name` equal to the directory, a `description`
   of at most 200 characters, and only standard keys at the top level. Agentkit extras go under
   `metadata` (`agentkit-tier`, `agentkit-effort`, `agentkit-user-only`, `agentkit-args`).
 - **R011-15** The `freeze` skill shall set `agentkit-user-only: "true"` and shall stop when the
   spec is not `tests-approved`.
-- **R011-16** The tiers shall be: kickoff, spec and write-tests strong/high, implement standard/medium,
+- **R011-16** The tiers shall be: kickoff, feature, spec and write-tests strong/high, implement standard/medium,
   freeze and handoff fast/low.
 - **R011-17** Each skill shall name the role it delegates review to, and say what to do when the
   tool has no subagents (apply the role's checklist inline). [manual]
 - **R011-19** The `kickoff` skill shall apply only when the project has no spec. It shall:
   - interview the owner in batches of at most eight questions;
   - have the owner accept a numbered breakdown before writing any spec, where `000` is the
-    vision and constitution and features are numbered in dependency order (each depends only
-    on lower numbers);
+    vision and constitution and features are numbered in dependency order, with `depends` in
+    each front matter;
   - write spec 000 and `specs/README.md`, and create every other spec as a `draft` skeleton;
   - approve nothing without the owner. [manual]
-- **R011-20** The `spec` skill shall number a new feature from the roadmap in `specs/README.md`
-  when it is listed there, and otherwise with the next free number (R005-17), never reusing
-  one. [manual]
+- **R011-20** The `feature` skill shall apply when the project has specs. It shall:
+  - read the spec index and open only related specs;
+  - classify each part of the idea as a new spec or an amendment of an existing one, and
+    leave amendments past `draft` to the owner;
+  - number new specs one above the highest number on the default branch or locally, including
+    dropped specs;
+  - after the owner accepts, create `draft` skeletons with `depends`, add the index rows, and
+    commit them at once to reserve the numbers. [manual]
+- **R011-21** Only `kickoff` and `feature` shall assign spec numbers. `spec` works on an
+  existing draft. [manual]
 - **R011-18** Skills shall refer to agentkit commands through `{{python}} .agentkit/bin/agentkit`,
   rendered at install time.
 
@@ -99,7 +107,7 @@ The files and front-matter fields listed above. There is no Python API.
 
 - Templates `agentkit.toml.tmpl`, `specs-README.md` and `unfreeze-log.md`.
 - The block-size cap (R011-06), and the `metadata` convention for agentkit extras (R011-14).
-- The `kickoff` skill and the numbering rules (R011-19, R011-20) (owner's request, 2026-10-03).
+- The `kickoff` and `feature` skills and the numbering rules (R011-19 to R011-21) (owner's request, 2026-10-03).
 
 ## Open questions
 

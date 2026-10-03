@@ -2,6 +2,7 @@
 id: "005"
 title: Spec folders, phases, requirement IDs and traceability
 status: approved
+depends: ["001"]
 ---
 
 # 005 Spec folders, phases, requirement IDs and traceability
@@ -21,6 +22,15 @@ Test names start with their requirement ID.
   A missing status means `draft`.
 - **R005-03** The phases shall be, in order: `draft`, `approved`, `tests-draft`,
   `tests-approved`, `frozen`, `done`.
+- **R005-18** `dropped` shall be a terminal phase outside the order of R005-03, for an idea the
+  owner abandoned. `spec-status NNN dropped` is accepted only from `draft`, `approved` and
+  `tests-draft`; from a later phase it exits 1, saying the owner must unfreeze first. A dropped
+  spec keeps its folder and number. `trace` (without `--spec`) and `status` skip it.
+- **R005-19** If two folders under `<specs>` share a number, then `trace`, `new-spec` and
+  `spec-status` shall exit 1, naming both folders.
+- **R005-20** The front matter may hold `depends`, a list of spec numbers (absent means none).
+  `trace` shall exit 1 when an entry names no existing spec, names the spec itself, or forms a
+  cycle, naming the spec and the entry.
 - **R005-04** `agentkit new-spec NNN slug [--title T]` shall create `spec.md`, `plan.md`,
   `tasks.md` and `progress.md` from the kit templates, replacing `{{id}}`, `{{slug}}` and
   `{{title}}` (default title: the slug with hyphens as spaces, capitalised).
@@ -61,8 +71,9 @@ Test names start with their requirement ID.
 
 ```text
 agentkit/specs.py:
-  PHASES: list[str]
-  @dataclass Spec: id, slug, dir, status, title; spec_md: Path; next_action() -> str
+  PHASES: list[str]                 # the order of R005-03
+  DROPPED = "dropped"               # R005-18
+  @dataclass Spec: id, slug, dir, status, title, depends: list[str]; spec_md: Path; next_action() -> str
   list_specs(cfg) -> list[Spec]; find_spec(cfg, spec_id) -> Spec | None
   set_status(spec, status) -> None
   spec_requirements(cfg, spec) -> (testable_ids: list[str], excluded_ids: set[str])
@@ -87,6 +98,8 @@ agentkit/trace.py:
 - `new-spec` and `spec-status` commands.
 - The `[removed]` marker.
 - Automatic numbering (R005-17), so an agent can number specs from scratch (owner's request, 2026-10-03).
+- The `dropped` phase, the duplicate-number check and `depends` (R005-18 to R005-20), so ideas
+  can be reserved as numbered drafts at any time and built later (owner's request, 2026-10-03).
 
 ## Open questions
 

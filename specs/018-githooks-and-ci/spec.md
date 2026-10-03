@@ -2,6 +2,7 @@
 id: "018"
 title: Git hooks and CI
 status: approved
+depends: ["002", "009", "010"]
 ---
 
 # 018 Git hooks and CI

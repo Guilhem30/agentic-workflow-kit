@@ -2,6 +2,7 @@
 id: "016"
 title: Pi adapter
 status: approved
+depends: ["004", "010"]
 ---
 
 # 016 Pi adapter

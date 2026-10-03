@@ -2,6 +2,7 @@
 id: "009"
 title: Instruction linter (token budgets)
 status: approved
+depends: ["001"]
 ---
 
 # 009 Instruction linter

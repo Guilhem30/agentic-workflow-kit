@@ -2,6 +2,7 @@
 id: "001"
 title: Configuration, profiles, globs and model tiers
 status: tests-draft
+depends: ["000"]
 ---
 
 # 001 Configuration, profiles, globs and model tiers
@@ -86,7 +87,7 @@ Nobody types model names. At install, the owner picks one of two modes with `--m
 
 | Tier | Effort | Roles (subagents) | Skills |
 |---|---|---|---|
-| strong | high | spec-writer, spec-reviewer, test-writer, test-auditor, impl-reviewer | `/kickoff`, `/spec`, `/write-tests` |
+| strong | high | spec-writer, spec-reviewer, test-writer, test-auditor, impl-reviewer | `/kickoff`, `/feature`, `/spec`, `/write-tests` |
 | standard | medium | implementer | `/implement` |
 | fast | low | summarizer | `/freeze`, `/handoff` |
 

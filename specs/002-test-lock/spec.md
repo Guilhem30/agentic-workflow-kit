@@ -2,6 +2,7 @@
 id: "002"
 title: Test-freeze lock
 status: tests-draft
+depends: ["001", "005"]
 ---
 
 # 002 Test-freeze lock

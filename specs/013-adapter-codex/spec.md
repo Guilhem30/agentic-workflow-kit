@@ -2,6 +2,7 @@
 id: "013"
 title: Codex CLI adapter
 status: approved
+depends: ["004", "010", "011"]
 ---
 
 # 013 Codex CLI adapter
