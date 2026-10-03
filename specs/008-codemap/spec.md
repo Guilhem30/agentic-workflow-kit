@@ -44,9 +44,9 @@ agentkit/codemap.py: build(cfg) -> str; write(cfg, check=False) -> bool
 
 ## Examples and edge cases
 
-With the kotlin-gradle profile, `core/model/src/main/kotlin/GlyphFrame.kt` containing
-`data class GlyphFrame` and `fun GlyphFrame.toAscii()` gives
-`- GlyphFrame.kt: GlyphFrame, toAscii` under `## core/model/src/main/kotlin`.
+With the kotlin-gradle profile, `billing/src/main/kotlin/Invoice.kt` containing
+`data class Invoice` and `fun Invoice.total()` gives
+`- Invoice.kt: Invoice, total` under `## billing/src/main/kotlin`.
 Private and nested declarations are not listed (the regexes are anchored at the start of a line).
 
 ## Additions beyond plan.bkp

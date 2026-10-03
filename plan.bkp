@@ -1,39 +1,21 @@
-# Plan: Agentic Workflow Kit + GlyphNotif for Nothing Phone (3)
+# Plan: Agentic Workflow Kit
 
 ## Context
 
-You want two things.
+You want a generic, reusable agentic-programming workflow kit. It must not be tied to any language or to Claude. It should work in any language and with any LLM or agent tool. It includes full adapters for Claude Code and for the most popular open-source agent CLIs as of September 2026.
 
-**1. A Nothing Phone (3) app (`C:\Users\guilh\git\nothingnotif`, empty, not yet a git repo).** For each selected app, rules match notifications by title, keywords or sender ("emitter"), and each match shows a chosen glyph on the 25×25 Glyph Matrix on the back of the phone.
-- Glyphs are drawn by hand, or imported from a photo.
-- A photo converter produces a sparse glyph with very few lit points. It offers 3 auto-tuned options and sliders, with a live preview on the back of the phone.
-
-**2. A generic, reusable agentic-programming workflow kit.** It must not be tied to Kotlin or to Claude. It should work in any language and with any LLM or agent tool. It includes full adapters for Claude Code and for the most popular open-source agent CLIs as of September 2026.
-
-**Both are developed with the same process.** Specs are written first, then tests. Tests are committed and frozen once you have verified them. Implementation iterates until all tests pass. Tests never change without your agreement. Token usage must stay low without hurting code quality or speed much.
+**The kit is developed with its own process.** Specs are written first, then tests. Tests are committed and frozen once you have verified them. Implementation iterates until all tests pass. Tests never change without your agreement. Token usage must stay low without hurting code quality or speed much.
 
 ## Decisions you made
 
 | Topic | Decision |
 |---|---|
-| Kit location | A sibling repo, `C:\Users\guilh\git\agentic-workflow-kit`. nothingnotif is **installed from it**, so it is the kit's first real user. |
+| Kit location | A standalone repo, `agentic-workflow-kit`. The kit installs itself, so it is its own first user. |
 | Adapters | **Full** adapters for Claude Code + the top open-source agent CLIs (below) |
-| First deliverable for nothingnotif | Workflow files + an Android multi-module skeleton that builds green. No feature code. |
 | Gates | **You approve every gate** (spec approved → tests approved → freeze) |
 | Frozen tests | Edits are **hard-blocked**. Only you unfreeze, by running a command yourself, and every unfreeze is logged. |
 
 ## Research findings (condensed)
-
-**Glyph Matrix Developer Kit** (`Nothing-Developer-Programme/GlyphMatrix-Developer-Kit`):
-- **Library and permission:** `glyph-matrix-sdk-2.0.aar` and the permission `com.nothing.ketchum.permission.ENABLE`.
-- **Device:** Phone (3) is `Glyph.DEVICE_23112`. Its 25×25 grid holds **489 physical LEDs laid out in a circle**.
-- **App display:** an app pushes a frame with `GlyphMatrixManager.init / register / setAppMatrixFrame(int[]|GlyphMatrixFrame) / closeAppMatrix`. This requires system version ≥ 20250801.
-- **Display priority:** Glyph Toys take priority over apps, and the Glyph Button overrides app content.
-- **Not documented** (the hardware spike will answer these):
-  - the value range of raw frames;
-  - whether frames display when the screen is off or locked, or when pushed from a background `NotificationListenerService`;
-  - the refresh rate;
-  - interaction with the phone's own glyph notifications.
 
 **Instruction and skill standards:**
 - **AGENTS.md** is the cross-tool instruction file standard (Linux Foundation AAIF). Claude Code reads it only when there is no CLAUDE.md, or when a CLAUDE.md imports it with `@AGENTS.md`. **The import is the way to avoid duplicated tokens.**
@@ -58,11 +40,11 @@ You want two things.
 
 **Spec-driven development:** Spec Kit / Kiro style. One folder per feature (`spec.md`/`plan.md`/`tasks.md`), **EARS** requirements with stable IDs, and a constitution of rules that never change.
 
-**Local toolchain (checked):** git 2.48, JDK 17, Python 3.14, Node 22, uv, pwsh 7, adb, Android SDK. Gradle, gh and jq are not installed.
+**Local toolchain (checked):** git 2.48, Python 3.14, Node 22, uv, pwsh 7. gh and jq are not installed.
 
 ---
 
-## Part A: `agentic-workflow-kit` (generic, sibling repo)
+## Part A: `agentic-workflow-kit`
 
 ### Design principles
 
@@ -157,11 +139,19 @@ Each profile sets:
 - `build_output_globs` (denied for reads);
 - format and lint commands.
 
-`kotlin-gradle` is built in full now (used by nothingnotif). The others are small presets, each covered by a smoke test on a tiny fixture repo.
+Every profile is a small preset, covered by a smoke test on a tiny fixture repo.
+
+### Per-feature cycle
+
+The kit skills drive each feature:
+1. `/spec` → the spec-reviewer checks it → **you approve**.
+2. `/write-tests` → API stubs that raise with the requirement ID + tests that fail → `agentkit trace` → test-auditor review → **you approve**.
+3. `/freeze` (only you can trigger it): commit `test(NNN)` + lock.
+4. `/implement`: targeted tests → full check → impl-reviewer looks for test-gaming → `feat(NNN)`.
 
 ---
 
-## Part B: Token-efficiency strategy (kit default, applied to nothingnotif)
+## Part B: Token-efficiency strategy (kit default)
 
 **1. Small always-loaded context.** The target is about 3k tokens at session start.
 - AGENTS.md ≤ 150 lines; CLAUDE.md is only the `@AGENTS.md` import plus Claude-only notes.
@@ -171,13 +161,13 @@ Each profile sets:
 **2. No exploration tax.**
 - `docs/CODEMAP.md` and `docs/architecture.md` give a map of the code up front.
 - Each spec's **public API contract** says where code goes.
-- A Kotlin LSP / code-intelligence plugin, where the tool supports one, replaces grep-then-read with "go to definition".
+- An LSP / code-intelligence plugin, where the tool supports one, replaces grep-then-read with "go to definition".
 
 **3. Compressed tool output.**
-- `agentkit test` prints only the summary and failures, never raw Gradle logs.
-- Gradle runs with `--quiet --console=plain`.
+- `agentkit test` prints only the summary and failures, never raw build logs.
+- Test commands run in quiet mode.
 - Reads of build outputs are denied.
-- Golden files are compact ASCII grids instead of images.
+- Golden files are compact text instead of images.
 
 **4. Short sessions that resume from files.**
 - One spec phase per session, with `/clear` between phases.
@@ -194,122 +184,17 @@ Each profile sets:
 **6. Prompt-cache hygiene.**
 - Stable instruction files.
 - No edits to instructions, settings or MCP servers mid-session.
-- No MCP servers by default: use CLIs instead (gradle, adb, git).
+- No MCP servers by default: use CLIs instead (build tools, git).
 - Avoid idle gaps longer than the cache lifetime during active work.
 
 **7. Fast loops.**
 - Targeted test runs during implementation (`test_one_cmd`), and the full check only before a commit.
-- The Gradle configuration cache, build cache and daemon are enabled. This is about speed, not tokens.
+- The toolchain's own caches are enabled. This is about speed, not tokens.
 
 **8. Measure.**
 - The status line shows context % (Claude).
 - `/usage` gives the per-skill and per-subagent breakdown.
 - `TOKEN-EFFICIENCY.md` holds the budgets to check against.
-
----
-
-## Part C: nothingnotif (installed from the kit, `--profile kotlin-gradle --adapters claude-code`)
-
-Other adapters can be added later with a single `agentkit install --adapters …`.
-
-### Project-specific files (added on top of the kit install)
-
-- **AGENTS.md project sections:**
-  - product summary;
-  - module map and dependency rules (no `android.*` imports in `core:*`);
-  - conventions: fakes instead of mocks in core, injected clock and dispatchers, test names start with requirement IDs, ASCII golden 25×25 grids;
-  - gotchas: Glyph SDK priority and system version, PowerShell vs bash, CRLF.
-- **CLAUDE.md:** `@AGENTS.md` + Claude specifics (model tiers per skill, compaction preferences).
-- **`.claude/rules/` (path-scoped):**
-  - `kotlin-core.md` (`core/**`);
-  - `android.md` (`app/**`, `data/**`, `glyph/**`, including Nothing SDK gotchas);
-  - `tests.md`;
-  - `specs.md`.
-- **Skills:**
-  - project skill `device/`: build, install on the Phone (3) over adb, device tests, logcat filtered to our tags.
-- **Docs:**
-  - `docs/architecture.md`;
-  - `docs/hardware/phone3-glyph-matrix.md` (SDK facts + the spike's questions);
-  - `docs/adr/0001-native-kotlin-compose`, `0002-pure-kotlin-core`, `0003-agentkit-workflow`.
-- **First spec:** `specs/000-product-vision/spec.md`, covering personas, user stories, glossary, v1 scope, what is out of scope (animations, Glyph Museum import, other devices) and the roadmap. It is a **draft for your approval**.
-- **Android skeleton:**
-  - Gradle wrapper; `settings.gradle.kts`;
-  - `gradle/libs.versions.toml` (latest stable AGP, Kotlin, Compose BOM, JUnit 5, Kotest, Robolectric, Roborazzi, Turbine);
-  - convention plugins in `build-logic/` (including Spotless/ktlint and Detekt);
-  - the 8 modules below as empty shells, with a single no-op app screen.
-
-### Product architecture (target)
-
-Native **Kotlin + Jetpack Compose (Material 3)**, Phone (3) only (minSdk 35), using Hilt and Room. All logic lives in **pure-Kotlin JVM modules**, so tests are fast and need no device.
-
-| Module | Kind | Responsibility |
-|---|---|---|
-| `:core:model` | pure | `GlyphFrame` (25×25, 0–255), `Phone3LedMask` (489 LEDs), `Glyph`, `AppProfile`, `Rule`/`Condition`, `GlyphDisplay` interface, ASCII-grid codec |
-| `:core:rules` | pure | `NotificationEvent` → `RuleEngine` → `GlyphAction`. Conditions on TITLE / TEXT (keywords) / SENDER / ANY, with operators contains / equals / starts-with / regex. Matching is case- and accent-insensitive. Rules apply by priority, with a default glyph per app. |
-| `:core:playback` | pure | Duration, queue, de-duplication, ignoring ongoing and group-summary notifications. Clock and dispatchers are injected. |
-| `:core:editor` | pure | Manual editor state machine: pen and brightness brush, eraser, mirror symmetry, shift and rotate, invert, undo/redo |
-| `:core:converter` | pure | Photo → sparse glyph pipeline (below) |
-| `:data` | Android | Room repositories, JSON backup |
-| `:glyph` | Android | Nothing SDK adapter (`GlyphDisplay`), a throttled latest-wins live-preview channel, `FakeGlyphDisplay` (testFixtures), and a no-op implementation for the emulator |
-| `:app` | Android | Compose UI, `NotificationListenerService` (title, text, bigText and MessagingStyle sender → `NotificationEvent`), onboarding |
-
-**Converter pipeline:**
-1. Decode the image, apply EXIF rotation, and work at about 250 px.
-2. Optionally isolate the subject (ML Kit segmentation, behind an interface, with a pure fallback).
-3. Fit the image to the circle (pan, zoom, rotate).
-4. Tone: luminance, auto-levels, gamma and contrast.
-5. Compute an edge map (Sobel).
-6. Downsample to 25×25 with area averaging, while keeping edges (edge-aware max).
-7. Render in one of three modes:
-   - **Silhouette:** Otsu threshold, then fill.
-   - **Outline:** thinned 1-LED strokes.
-   - **Tonal:** 3–4 brightness levels with error diffusion.
-8. Sparsify: remove isolated LEDs, cap the number of lit LEDs at a **point budget**, and keep strokes connected.
-9. Apply the LED mask.
-
-The **3 recommendations** are these three modes, each auto-tuned and ranked by a score:
-- structural similarity to the area-averaged reference;
-- penalties for LED count, noise (number of separate blobs) and an off-centre subject.
-
-**Sliders:** mode, threshold, contrast, gamma, detail, point budget, line thickness, invert, zoom, pan and rotate. Each step has a budget of ≤ 16 ms. The preview mirrors to the back of the phone, throttled.
-
-### Per-feature cycle
-
-The kit skills drive each feature:
-1. `/spec` → the spec-reviewer checks it → **you approve**.
-2. `/write-tests` → API stubs `TODO("REQ-ID")` + tests that compile and fail → `agentkit trace` → test-auditor review → **you approve**.
-3. `/freeze` (only you can trigger it): commit `test(NNN)` + lock.
-4. `/implement`: targeted tests → full check → impl-reviewer looks for test-gaming → `feat(NNN)`.
-
-**Test tiers:**
-- pure modules: JUnit 5 + Kotest (incl. property tests);
-- Android modules: Robolectric + Compose UI tests + Roborazzi;
-- flows: Turbine;
-- `@DeviceOnly` instrumented tests on the Phone (3), run manually.
-
-### Roadmap
-
-0. **Hardware spike.** This is the only step exempt from TDD. Throwaway code goes in `spikes/`. It answers:
-   - the value range of raw frames;
-   - whether display works from a background listener and with the screen off or locked;
-   - how long a frame persists;
-   - the refresh rate;
-   - conflicts with the phone's own glyph notifications and with Toys;
-   - the exact LED mask.
-
-   If background display turns out to be impossible, I'll come back to you to rescope before going further.
-1. `001` model + LED geometry + ASCII golden format
-2. `002` display adapter + live preview
-3. `003` notification capture
-4. `004` rule engine
-5. `005` playback
-6. `006` persistence and backup
-7. `007` manual editor
-8. `008` converter pipeline
-9. `009` 3 recommendations
-10. `010` converter UI with sliders + live preview on the back of the phone
-11. `011` app picker and rules UI
-12. `012` onboarding and permissions
 
 ---
 
@@ -324,27 +209,21 @@ The kit skills drive each feature:
    - Claude Code first, which is also self-installed into the kit;
    - then Codex, OpenCode, DeepSeek Harness and Pi, each checked against current docs and covered by conformance tests;
    - then profiles, githooks and CI.
-3. **Install into nothingnotif.**
-   - Install the kit (profile `kotlin-gradle`, adapter `claude-code`), then add the project files listed in Part C.
-   - Build the Android skeleton.
-   - **I'll ask before any download:** the Gradle distribution, Maven/Google dependencies, and `glyph-matrix-sdk-2.0.aar` from the official Nothing repo.
-4. **Verify** (below). Then propose commits in each repo, `chore: bootstrap …`, made only if you agree.
-5. **Gate 1:** hand over the `000-product-vision` draft for your approval.
+3. **Verify** (below). Then propose a commit, `chore: bootstrap …`, made only if you agree.
+4. **Gate 1:** hand over the `000-kit-vision` draft for your approval.
 
 ## Verification
 
 - **Kit:** `python -m unittest discover -s tests` is green. This covers:
   - lock, guard (every payload format, including Codex `apply_patch` parsing), trace, test-output summariser, lint-instructions;
   - install, update and `sync --check` against temporary fixture repos for 2 or more profiles.
-- **Guard demo in nothingnotif:** freeze a dummy test, then:
+- **Guard demo in a throwaway fixture repo:** freeze a dummy test, then:
   - try to edit it with the Edit tool → denied;
   - change it from the shell → the Stop hook blocks;
   - `git commit` → pre-commit rejects it;
   - `agentkit lock unfreeze` run by you → allowed and logged.
 
-  Then clean up.
+  Then delete the fixture repo.
 - **Other adapters:** for Codex, OpenCode, DeepSeek Harness and Pi, the conformance tests prove the guard's decisions on recorded payloads. A live check is optional, if you have that CLI installed (Codex needs the hook trust step first).
 - **Token budget:** `agentkit lint-instructions` passes. The always-loaded instruction size is reported, with ~3k tokens as the target.
-- **nothingnotif build:** `.\gradlew.bat build` is green: all modules compile, the empty test suites pass, and Spotless and Detekt pass. `agentkit test` prints the compact summary.
-- **Optional on the device:** `adb devices` → `.\gradlew.bat :app:installDebug`.
 - **In your own session:** `/context` shows CLAUDE.md + AGENTS.md loaded once (not twice), and `/doctor prompt-audit` reports nothing contradictory.

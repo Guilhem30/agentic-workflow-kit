@@ -95,8 +95,7 @@ and `adapters/claude-code/statusline.py`. The generator functions are
 
 - `env.AGENTKIT_AGENT` (used by R002-20).
 - Read in the PreToolUse matcher (for R003-11).
-- The plan's `.claude/rules/` examples are left to projects (nothingnotif creates its own), not
-  shipped by the kit.
+- The plan's `.claude/rules/` examples are left to projects, not shipped by the kit.
 
 ## Open questions
 

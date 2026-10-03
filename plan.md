@@ -1,8 +1,7 @@
 # Plan: Agentic Workflow Kit
 
-Revision of `plan.bkp` (2026-10-03). The Android app (nothingnotif / GlyphNotif for Nothing
-Phone (3)) is **paused**. All work now goes into the generic kit. `plan.bkp` stays in the repo
-unchanged as the historical source that the approved specs cite.
+Working plan, revised from `plan.bkp` (2026-10-03). `plan.bkp` stays in the repo as the source
+the approved specs cite.
 
 ## Context
 
@@ -17,22 +16,11 @@ The process it packages, and that the kit is itself built with:
 Tests never change without your agreement. Token usage stays low without hurting code quality or
 speed much.
 
-### What changed from `plan.bkp`
-
-| Topic | `plan.bkp` | Now |
-|---|---|---|
-| Scope | Kit + nothingnotif | **Kit only.** nothingnotif is parked (see [Deferred](#deferred-nothingnotif)). |
-| First real user | nothingnotif (Kotlin/Android, Claude Code) | **The kit itself** (self-hosting, `python-unittest` profile), plus throwaway fixture repos for every profile |
-| `kotlin-gradle` profile | The one "full" profile | One preset among equals. Its approved detail (R017-05/06) stays, but nothing depends on it. |
-| Guard demo | Run in nothingnotif | Run in a throwaway fixture repo |
-| Part C (Android architecture, converter, roadmap 001–012) | In scope | Removed from this plan |
-| Glyph Matrix research, Android toolchain | In scope | Removed from this plan |
-
-## Decisions you made (still valid)
+## Decisions you made
 
 | Topic | Decision |
 |---|---|
-| Kit location | This repo, `agentic-workflow-kit`, standalone |
+| Kit location | This repo, `agentic-workflow-kit`, standalone. The kit installs itself, so it is its own first user. |
 | Adapters | **Full** adapters for Claude Code, Codex CLI, OpenCode, DeepSeek Harness and Pi |
 | Gates | **You approve every gate** (spec approved → tests approved → freeze) |
 | Frozen tests | Edits are **hard-blocked**. Only you unfreeze, by running a command yourself, and every unfreeze is logged. |
@@ -51,7 +39,7 @@ speed much.
 - **`spikes/prototype/`** holds unreviewed code written straight from `plan.bkp`. It is reference
   material only. Nothing in it ships.
 
-## Research findings (kit-relevant, condensed)
+## Research findings (condensed)
 
 **Instruction and skill standards:**
 - **AGENTS.md** is the cross-tool instruction file standard (Linux Foundation AAIF). Claude Code
@@ -184,7 +172,7 @@ Each profile sets `test_cmd` / `test_one_cmd`, `junit_report_glob` (or `output_f
 `frozen_globs`, `source_globs`, `build_output_globs`, `req_id_regex`, codemap symbol regexes,
 format/lint commands and `ci_setup`.
 
-- **`python-unittest` is the reference profile**, because the kit dogfoods it every day.
+- `python-unittest` is the profile the kit uses for itself.
 - `python-pytest`, `node-ts` (Vitest), `go`, `rust-cargo`, `dotnet`, `kotlin-gradle` and
   `generic` are presets. Each one is covered by a smoke test on a tiny fixture repo that checks
   globs, `trace`, `codemap` and build-output matching without running the language toolchain.
@@ -223,21 +211,6 @@ before a commit; the toolchain's own caches enabled.
 
 **8. Measure.** Status line shows context % (Claude); `/usage` per skill and subagent;
 `TOKEN-EFFICIENCY.md` holds the budgets.
-
----
-
-## Spec amendments needed (your approval)
-
-The approved specs mention nothingnotif in four places. None of them changes behaviour, but
-they are approved specs, so I will only edit them with your agreement:
-
-| Spec | Today | Proposed |
-|---|---|---|
-| 000 Context | "The first real user is `nothingnotif` (Kotlin/Android, Claude Code)." | "The first real user is the kit itself (019); every profile is exercised by fixture repos (017)." |
-| 000 Scope | "kotlin-gradle (full), python-pytest, …" | List all eight profiles as presets, `python-unittest` as reference |
-| 017 Context | "`kotlin-gradle` is complete because nothingnotif uses it." | "`python-unittest` is the reference profile because the kit uses it. The others are presets." R017-05/06 stay as they are. |
-| 019 R019-10 | Guard demo run once in nothingnotif, then cleaned up | Guard demo run once in a throwaway fixture repo installed with `--profile python-pytest --adapters claude-code`, then deleted |
-| 012 Additions | "…left to projects (nothingnotif creates its own)…" | "…left to projects…" |
 
 ---
 
@@ -296,17 +269,3 @@ to you (as was done for 001/002).
   against the ~3k-token target.
 - **In your own Claude Code session:** `/context` shows CLAUDE.md + AGENTS.md loaded once, not
   twice.
-
----
-
-## Deferred: nothingnotif
-
-The Nothing Phone (3) app is paused, not cancelled. When it resumes:
-
-- It is installed from the kit like any other project:
-  `agentkit install --profile kotlin-gradle --adapters claude-code`.
-- `plan.bkp` Part C (product architecture, converter pipeline, roadmap 000–012) and the Glyph
-  Matrix research are the starting point. They are not maintained here.
-- The hardware spike and the Android skeleton come first, as `plan.bkp` describes. Downloads
-  (Gradle, Maven/Google dependencies, `glyph-matrix-sdk-2.0.aar`) still need your approval.
-- Nothing in the kit may depend on it in the meantime.
