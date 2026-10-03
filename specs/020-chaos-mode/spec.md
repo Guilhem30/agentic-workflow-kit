@@ -14,7 +14,7 @@ problem arises. Only the owner turns it on, in `[chaos]` of `agentkit.toml` (a f
 write, R003-09), for the whole repository or for chosen specs. With chaos mode on, an agent may
 set `approved`, `tests-approved` and `done` and run `lock freeze`, each only with a passing
 verdict from the matching reviewer role (spec-reviewer, test-auditor, impl-reviewer). An agent may
-unfreeze a test when a reviewer agrees; the unfreeze log marks it as an agent unfreeze for later
+unfreeze a test when the test-auditor and the impl-reviewer agree; the unfreeze log marks it as an agent unfreeze for later
 audit. Every agent approval made through the CLI is appended to an append-only log. A critical
 problem stops the run and writes an escalation record: the same gate rejected twice in a row (N
 configurable), a failing `lock verify` or `lock audit`, or a change that touches spec 000 or a
@@ -81,15 +81,14 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
 - **R020-08** Every record shall hold `seq` (its 1-based line number), `time`, `kind`
   (`approve`, `reject`, `unfreeze`, `escalate` or `clear`), `commit` (HEAD's full hash), `user`
   (git `user.name`, or `unknown`) and `actor` (`agent` in an agent environment, else `human`).
-- **R020-09** `approve` and `reject` records shall also hold `spec`, `gate`, `role`, `verdict`
-  (the normalised verdict line, R020-13), `review` (repo-relative path of the stored review) and
-  `review_sha256`. An `approve` of gate `frozen` has `role`, `verdict`, `review` and
-  `review_sha256` set to `null`, and also holds `files` (the newly frozen paths, sorted) and
-  `based_on` (the `seq` of the spec's newest `approve` of `tests-approved`, or `null`).
+- **R020-09** `approve` and `reject` records shall also hold `spec`, `gate` and `reviews`: a list
+  with one object per review, in the order of R020-12, holding `role`, `verdict` (the normalised
+  verdict line, R020-13), `review` (repo-relative path of the stored copy) and `review_sha256`.
+  An `approve` of gate `frozen` has `reviews: []`, and also holds `files` (the newly frozen paths,
+  sorted) and `based_on` (the `seq` of the spec's newest `approve` of `tests-approved`, or `null`).
 - **R020-10** `escalate` records shall also hold `spec`, `gate`, `cause` (`rejections`,
-  `verify`, `audit`, `protected` or `base`) and `detail` (a list of strings). `unfreeze` records
-  hold `spec`, `gate` (`"unfreeze"`), `files`, `reason`, `role`, `verdict`, `review` and
-  `review_sha256`. `clear` records hold `escalations` (a list of `seq`) and `note`.
+  `verify`, `audit`, `protected`, `base` or `owner`) and `detail` (a list of strings). `unfreeze`
+  records hold `spec`, `gate` (`"unfreeze"`), `files`, `reason` and `reviews` (as R020-09). `clear` records hold `escalations` (a list of `seq`) and `note`.
 - **R020-11** An escalation is open when no `clear` record lists its `seq`. Chaos mode is
   **paused** while it is enabled and at least one escalation is open.
 - **R020-37** If a log line is not a JSON object with the common fields of R020-08, the fields
@@ -97,19 +96,22 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
   shall raise `ChaosError` naming the line number. A missing log reads as no records.
 
 ### Reviews and verdicts
-- **R020-12** The review for each gate shall come from this role, with this passing and this
-  failing verdict line (`chaos.REVIEWS`):
+- **R020-12** The reviews for each gate shall come from these roles, each with this passing and
+  this failing verdict line (`chaos.REVIEWS`):
   - `approved`: spec-reviewer, `verdict: ready for owner approval` / `verdict: needs changes`;
   - `tests-approved`: test-auditor, `verdict: ready to freeze` / `verdict: needs changes`;
   - `done`: impl-reviewer, `verdict: approve` / `verdict: needs changes`;
-  - `unfreeze`: test-auditor, `verdict: unfreeze justified` / `verdict: keep frozen`.
+  - `unfreeze`: two reviews, test-auditor then impl-reviewer, each `verdict: unfreeze justified`
+    / `verdict: keep frozen` (owner's decision, 2026-10-03).
+
+  Every role may also end with `verdict: needs owner` (`chaos.NEEDS_OWNER`, R020-43).
 - **R020-13** The verdict shall be the review file's last non-empty line, with surrounding
   whitespace, backquotes and asterisks removed, inner runs of whitespace collapsed to one space,
-  and lowercased. If it equals neither line of the gate, or the file is missing, empty or not
+  and lowercased. If it equals none of the gate's passing, failing and `needs owner` lines, or the file is missing, empty or not
   UTF-8, then the command shall exit 2, write nothing, and quote the line it found (or say that
   there is none).
 - **R020-14** When a record cites a review, the review file shall be copied byte for byte to
-  `<spec dir>/reviews/<seq>-<gate>.md` (replacing any file there) and its SHA-256 (as R002-03)
+  `<spec dir>/reviews/<seq>-<gate>-<role>.md` (replacing any file there) and its SHA-256 (as R002-03)
   stored in the record.
 
 ### Order of checks
@@ -125,7 +127,7 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
   6. exit 1: not paused (R020-18);
   7. exit 1: trace, for `tests-approved` only (R020-17);
   8. the critical checks (R020-19);
-  9. the verdict (R020-20 to R020-22, R020-24, R020-25).
+  9. the verdicts (R020-43, then R020-20 to R020-22, R020-24, R020-25).
 
 ### Gates
 - **R020-15** `agentkit chaos approve NNN GATE [--review FILE]` shall accept the gates
@@ -147,6 +149,11 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
   - `audit`: `lock.audit(cfg, base=<base commit>)` reports a problem (detail: the problems);
   - `protected`: a path changed since the base commit matches `escalate_globs` (detail: the
     paths, sorted).
+- **R020-43** When any review's verdict is `verdict: needs owner`, the command shall append an
+  `escalate` record with cause `owner` (detail: the role of each such review and its stored copy
+  path), change nothing else, print the hint of R020-19 and exit 1. The reviews are stored as in
+  R020-14. A spec-reviewer uses it for an open question that only the owner can answer; other
+  open questions do not stop an agent approval (owner's decision, 2026-10-03).
 - **R020-20** When the verdict fails, the command shall append a `reject` record, leave the
   phase unchanged and exit 1.
 - **R020-21** When the `reject` records for the same spec and gate that are newer than the
@@ -160,23 +167,25 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
   record (with `files` possibly empty) and exits 0.
 
 ### Agent unfreeze
-- **R020-23** `agentkit chaos unfreeze PATH... --reason TEXT --review FILE` shall require a
-  reason of at least 5 characters after stripping and a `--review` (else exit 2). Directory
+- **R020-23** `agentkit chaos unfreeze PATH... --reason TEXT --auditor-review FILE
+  --impl-review FILE` shall require a reason of at least 5 characters after stripping and both
+  reviews (else exit 2). Directory
   arguments stand for the frozen files inside them. Every resulting path shall be frozen and all
   of them shall have the same non-null `spec` in the lock; otherwise the command exits 1 naming
   the offending paths, with a hint to ask the owner.
 - **R020-39** The spec named by the paths shall be in phase `frozen` or `done`; otherwise
   `chaos unfreeze` exits 1 naming the phase.
-- **R020-24** When the unfreeze verdict fails, R020-20 and R020-21 shall apply with gate
-  `unfreeze`.
-- **R020-25** When the unfreeze verdict passes, the command shall remove the paths from the
+- **R020-24** When either unfreeze verdict fails, R020-20 and R020-21 shall apply with gate
+  `unfreeze`; the `reject` record holds both reviews.
+- **R020-25** When both unfreeze verdicts pass, the command shall remove the paths from the
   lock, set the spec's status to `tests-draft`, and append to the unfreeze log (creating it with `LOG_HEADER`, R002-25) these lines, exactly:
 
   ```text
   <empty line>
   ## <timestamp> - chaos agent (<user>)
   reason: <stripped reason>
-  review: <stored review path> sha256 <hex> (chaos log #<seq>)
+  review: <stored test-auditor review path> sha256 <hex> (chaos log #<seq>)
+  review: <stored impl-reviewer review path> sha256 <hex> (chaos log #<seq>)
   - <path>            (one line per file, sorted by path)
   ```
 
@@ -196,8 +205,9 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
 - **R020-27** `agentkit chaos log [--spec NNN] [--last N]` shall print the last N records
   (default 20; N < 1 exits 2), oldest first, one line each:
   `#<seq> <time> <kind> <spec> <gate> <info> (<actor>)`, where an absent spec or gate prints `-`
-  and info is the verdict (`approve`/`reject`; `files=<n>` for `frozen`), the cause
-  (`escalate`), the reason (`unfreeze`) or `#<a>,#<b>: <note>` (`clear`). A line longer than 200
+  and info is the verdicts joined by ` + ` (`approve`/`reject`/`unfreeze`; `files=<n>` for
+  `frozen`), the cause
+  (`escalate`) or `#<a>,#<b>: <note>` (`clear`). A line longer than 200
   characters is cut to 199 and ends with `…`. `--spec` keeps only records of that spec. It exits
   0, also with chaos mode off, and exits 1 naming the line when the log is malformed (R020-37).
 - **R020-41** `agentkit chaos log --open` shall print only open escalations, in the format of
@@ -252,8 +262,9 @@ agentkit/chaos.py:
   class ChaosError(Exception)               # exit 1
   class ChaosUsageError(ChaosError)         # exit 2
   GATES = ("approved", "tests-approved", "frozen", "done")
-  REVIEWS: dict[str, tuple[str, str, str]]  # gate or "unfreeze" -> (role, pass line, fail line)
-  CAUSES = ("rejections", "verify", "audit", "protected", "base")
+  REVIEWS: dict[str, list[tuple[str, str, str]]]  # gate or "unfreeze" -> [(role, pass, fail)]
+  NEEDS_OWNER = "verdict: needs owner"
+  CAUSES = ("rejections", "verify", "audit", "protected", "base", "owner")
   DEFAULT_LOG = "chaos-log.jsonl"
   @dataclass class Settings:
       enabled: bool; specs: list[str]; max_rejections: int; log_rel: str
@@ -262,10 +273,12 @@ agentkit/chaos.py:
   def settings(cfg) -> Settings                     # raises ConfigError (R020-02, R020-03)
   def read_log(cfg) -> list[dict]                   # raises ChaosError (R020-37)
   def open_escalations(cfg) -> list[dict]
-  def parse_verdict(text: str, gate: str) -> bool   # True = pass; raises ChaosUsageError
+  def parse_verdict(text: str, gate: str, role: str) -> str
+      # "pass" | "fail" | "owner"; raises ChaosUsageError
   def approve(cfg, spec_id, gate, review=None, user=None, now=None) -> dict
       # returns the last record appended; kind "approve" -> exit 0, "reject"/"escalate" -> exit 1
-  def unfreeze(cfg, paths, reason, review, user=None, now=None) -> dict   # same convention
+  def unfreeze(cfg, paths, reason, auditor_review, impl_review, user=None, now=None) -> dict
+      # same convention
   def clear(cfg, seqs=None, note="", all_open=False, confirm=None, user=None, now=None) -> dict
       # confirm(prompt, expected) -> bool; default = prompt through lock.open_console()
   def format_log(records: list[dict], open_only=False) -> list[str]
@@ -288,7 +301,7 @@ exists and is `draft`. One run, in order:
 | same again | `reject` #2, `escalate` #3 (`rejections`, detail `#1`, `#2`), exit 1; paused |
 | `chaos approve 012 approved --review r2.md`, passing | exit 1: paused, lists #3 |
 | owner: `chaos clear 3 --note "spec reworded"` | `clear` #4 |
-| `chaos approve 012 approved --review r3.md`, last line `` **`Verdict: Ready for owner approval`** `` | phase `approved`, `approve` #5, review at `specs/012-…/reviews/5-approved.md` |
+| `chaos approve 012 approved --review r3.md`, last line `` **`Verdict: Ready for owner approval`** `` | phase `approved`, `approve` #5, review at `specs/012-…/reviews/5-approved-spec-reviewer.md` |
 | `/write-tests 012`, then `chaos approve 012 tests-approved --review a.md`, passing | `approve` #6 |
 | `chaos approve 012 frozen` | `lock freeze --spec 012`; `approve` #7, `based_on` 6 |
 
@@ -296,6 +309,8 @@ Independent cases:
 
 | Case | Result |
 |---|---|
+| `chaos approve 012 approved --review r.md`, 012 `draft`, last line `verdict: needs owner` | `escalate` (`owner`), paused |
+| `chaos unfreeze tests/test_012_x.py --reason "…" --auditor-review a.md --impl-review i.md`, auditor passes, impl-reviewer `keep frozen` | `reject`, test stays frozen |
 | `chaos approve 013 approved --review r.md` | exit 1: 013 not under chaos mode |
 | `spec-status 012 tests-approved` inside Claude Code, 012 `tests-draft` | exit 1: use `chaos approve 012 tests-approved` |
 | `chaos approve 012 frozen --review r.md` | exit 2: `frozen` takes no review |
@@ -321,7 +336,7 @@ Independent cases:
 - Proving that a review came from an independent reviewer, that every rejection was submitted,
   or that no `status:` was edited by hand.
 - Mechanical checks before `done` beyond the critical checks (running the tests, `depends`
-  being `done`): see Open questions.
+  being `done`): the impl-reviewer covers them (owner's decision).
 - Concurrent chaos commands on one repository.
 - The `/autopilot` skill (021).
 - Changes to approved specs: listed below for the owner to apply.
@@ -343,8 +358,9 @@ Independent cases:
   chaos exception.
 - **006**: R006-02, R006-03 and R006-06 refer to R020-32 to R020-34.
 - **010**: the CODEOWNERS block (R010-10) covers the chaos log and `specs/*/reviews/`.
-- **011**: R011-12: the test-auditor role also ends an unfreeze review with
-  `verdict: unfreeze justified` or `verdict: keep frozen`; R011-05: AGENTS.md hard rule 2 (never
+- **011**: R011-12: the test-auditor and impl-reviewer roles also end an unfreeze review with
+  `verdict: unfreeze justified` or `verdict: keep frozen`, and every reviewer role may end with
+  `verdict: needs owner` for a question only the owner can answer; R011-05: AGENTS.md hard rule 2 (never
   edit the chaos log or reviews, never run `chaos clear`) and rule 3 (where chaos applies, gates
   go through `chaos approve`), within the R011-06 budget; R011-01: chaos mode in WORKFLOW.md
   (R020-35).
@@ -363,6 +379,9 @@ The whole spec is the owner's idea of 2026-10-03, not in plan.md. Design choices
 - `tests-approved` requires a clean `trace` (R020-17).
 - Spec 000 is simply outside chaos mode (R020-05); changes to it escalate through
   `escalate_globs`.
+- An agent unfreeze needs both the test-auditor and the impl-reviewer (owner's decision).
+- A reviewer escalates with `verdict: needs owner` (R020-43): an agent approves a spec with open
+  questions unless the reviewer finds one only the owner can answer (owner's decision).
 - An agent unfreeze is limited to one spec's tests, from `frozen` or `done`, and sends that spec
   back to `tests-draft`, so the changed tests are audited and frozen again.
 - The pause is global, not per spec.
@@ -373,13 +392,10 @@ The whole spec is the owner's idea of 2026-10-03, not in plan.md. Design choices
 
 ## Open questions
 
-1. Who reviews an agent unfreeze: the test-auditor with new verdict lines (proposed, R020-12), the
-   impl-reviewer, or both?
-2. Should a spec whose Open questions section is not empty escalate on chaos `approved` instead
-   of letting the reviewer decide? Open questions are by definition the owner's.
-3. `escalate_globs` default: all of `AGENTS.md` and `CLAUDE.md` (proposed; any edit escalates), or
-   only the agentkit block between its markers?
-4. Should `done` also require mechanical checks: the test command passing (007) and every
-   `depends` being `done`? Proposed: no, the impl-reviewer runs the tests; adding 007 would add a
-   dependency.
-5. ADR 0002 for the principle 5 change: write it now with this spec, or when 020 is implemented?
+None. Decided by the owner on 2026-10-03:
+1. An agent unfreeze needs both the test-auditor and the impl-reviewer (R020-12, R020-23).
+2. An agent approves a spec with open questions unless the reviewer judges one critical; the
+   reviewer then escalates with `verdict: needs owner` (R020-43).
+3. Any edit of `AGENTS.md` or `CLAUDE.md` escalates (R020-01 default `escalate_globs`).
+4. `done` needs no mechanical check beyond the critical checks; the impl-reviewer runs the tests.
+5. ADR 0002 records the principle 5 change; it is written once this spec is approved.

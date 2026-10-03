@@ -35,7 +35,7 @@ the principle 5 change.
 `tests/test_020_*.py`, on `support.RepoTestCase` with a git repo per test:
 - `test_020_config.py`: R020-01 to R020-06, R020-36;
 - `test_020_log_verdict.py`: R020-07 to R020-14, R020-37 (record shape, verdict normalisation);
-- `test_020_approve.py`: R020-15 to R020-22, R020-38, one test per critical-check cause;
+- `test_020_approve.py`: R020-15 to R020-22, R020-38, R020-43, one test per escalation cause;
 - `test_020_unfreeze_clear.py`: R020-23 to R020-28, R020-39 to R020-41 (`confirm`, `user`, `now` injected; agent
   environment simulated with `AGENTKIT_AGENT=1`, cleared otherwise);
 - `test_020_guard_status.py`: R020-29 to R020-34, R020-42, through `guard.evaluate` and
