@@ -1,7 +1,7 @@
 ---
 id: "002"
 title: Test-freeze lock
-status: approved
+status: tests-draft
 ---
 
 # 002 Test-freeze lock
