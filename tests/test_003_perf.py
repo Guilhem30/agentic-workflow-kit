@@ -1,6 +1,8 @@
 """Spec 003: decision time (R003-28)."""
 from __future__ import annotations
 
+import contextlib
+import io
 import subprocess
 import time
 import unittest
@@ -27,7 +29,6 @@ class PerformanceTests(GuardCase):
         self.write_lock(frozen)
 
     def test_R003_28_decides_within_300_ms_without_git(self):
-        cfg = self.cfg()
         actions = [
             WriteAction([FROZEN, "mod7/src/main/C7.kt", ".github/workflows/ci.yml"]),
             ReadAction(["mod3/build/out.txt", "mod3/src/test/T3Test.kt"]),
@@ -37,14 +38,23 @@ class PerformanceTests(GuardCase):
         ]
         from agentkit import guard
         best = None
-        with mock.patch.object(subprocess, "run", side_effect=AssertionError("git called")), \
-                mock.patch.object(subprocess, "Popen", side_effect=AssertionError("git called")):
+        with mock.patch.object(subprocess, "run") as run, \
+                mock.patch.object(subprocess, "Popen") as popen:
             for _ in range(3):
-                start = time.perf_counter()
-                decision = guard.evaluate(cfg, actions, cwd=str(self.root))
-                elapsed = time.perf_counter() - start
+                cfg = self.cfg()  # fresh each run: no state carried between runs
+                buf = io.StringIO()
+                with contextlib.redirect_stderr(buf):
+                    start = time.perf_counter()
+                    decision = guard.evaluate(cfg, actions, cwd=str(self.root))
+                    elapsed = time.perf_counter() - start
                 best = elapsed if best is None else min(best, elapsed)
+                self.assertNotIn("agentkit guard error", buf.getvalue())
+        run.assert_not_called()
+        popen.assert_not_called()
         self.assertEqual(decision.verdict, DENY)
+        # The shell analysis ran: the directory removal after `cd` is among the reasons.
+        self.assertTrue(any("mod9/src/test" in r or "rm -rf test" in r for r in decision.reasons),
+                        decision.reasons)
         self.assertLess(best, LIMIT_SECONDS)
 
 

@@ -106,7 +106,7 @@ class PathResolutionTests(GuardCase):
         drive, rest = os.path.splitdrive(str(self.root / FROZEN))
         bash_path = "/" + drive.rstrip(":").lower() + rest.replace("\\", "/")
         self.assertEqual(self.verdict(WriteAction([bash_path])), DENY)
-        self.assertEqual(self.sh(f"rm {bash_path}"), DENY)
+        self.assertEqual(self.sh(f"rm '{bash_path}'"), DENY)
 
     @unittest.skipIf(os.name == "nt", "POSIX check")
     def test_R003_05_posix_paths_are_not_rewritten(self):

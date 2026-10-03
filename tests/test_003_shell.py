@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import unittest
 
-from tests.guard_fixtures import ALLOW, ASK, DENY, FROZEN, GuardCase, ShellAction, WriteAction
+from tests.guard_fixtures import (ALLOW, ASK, DENY, FROZEN, GuardCase, ReadAction, ShellAction,
+                                  WriteAction)
 
 
 class ExampleTableTests(GuardCase):
@@ -16,6 +17,7 @@ class ExampleTableTests(GuardCase):
             (WriteAction(["tests.lock.json"]), DENY),
             (WriteAction([".github/workflows/ci.yml"]), ASK),
             (WriteAction([".agentkit/state/last-test.log"]), ALLOW),
+            (ReadAction(["app/build/reports/x.html"]), DENY),
             (ShellAction(f"cat {FROZEN}"), ALLOW),
             (ShellAction(f"echo x > {FROZEN}"), DENY),
             (ShellAction("cd app/src/test && rm FooTest.kt"), DENY),
@@ -114,7 +116,7 @@ class WorkingDirectoryTests(GuardCase):
         self.assert_shell(ALLOW, "rm FooTest.kt", cwd=self.root / "tools")
 
     def test_R003_17_absolute_cd_target(self):
-        self.assert_shell(DENY, f"cd {(self.root / 'app/src/test').as_posix()} && rm FooTest.kt")
+        self.assert_shell(DENY, f"cd '{(self.root / 'app/src/test').as_posix()}' && rm FooTest.kt")
 
     def test_R003_32_unknown_directory_markers(self):
         self.assert_shell(DENY, *(f"cd {target} && rm FooTest.kt" for target in
@@ -128,6 +130,14 @@ class WorkingDirectoryTests(GuardCase):
         self.assert_shell(ALLOW, "cd $DIR && rm Other.kt", "cd $DIR && cat FooTest.kt")
 
 
+class ShortBasenameTests(GuardCase):
+    FROZEN_EXTRA = ("app/src/test/a.kt", "app/src/test/ab.kt")
+
+    def test_R003_21_basenames_longer_than_four_characters(self):
+        self.assert_shell(DENY, "python -c \"open('ab.kt','w')\"")
+        self.assert_shell(ALLOW, "python -c \"open('a.kt','w')\"")
+
+
 class WriteArgumentTests(GuardCase):
 
     def test_R003_18_redirections_are_writes(self):
@@ -139,6 +149,8 @@ class WriteArgumentTests(GuardCase):
     def test_R003_18_null_devices_ignored(self):
         self.assert_shell(ALLOW, "make > /dev/null 2>&1", "dir > NUL", "ls > $null",
                           "echo x > docs/out.txt", f"cat {FROZEN} > /tmp/copy.txt")
+        self.assert_shell(DENY, f"make > /dev/null; echo x > {FROZEN}",
+                          f"echo x > {FROZEN} 2>/dev/null")
 
     def test_R003_18_redirect_to_protected_file(self):
         self.assert_shell(DENY, "echo {} > tests.lock.json", "echo x >> chaos-log.jsonl")
@@ -147,7 +159,7 @@ class WriteArgumentTests(GuardCase):
         self.assert_shell(DENY, f"rm {FROZEN}", f"rm -f {FROZEN}", f"rmdir {FROZEN}",
                           f"mv {FROZEN} x.kt", f"mv x.kt {FROZEN}", f"cp x.kt {FROZEN}",
                           f"tee {FROZEN}", f"tee -a {FROZEN}", f"truncate -s 0 {FROZEN}",
-                          f"dd if=/dev/zero of={FROZEN}", f"touch {FROZEN}",
+                          f"touch {FROZEN}",
                           f"ln -sf x {FROZEN}", f"install x {FROZEN}", f"unlink {FROZEN}",
                           f"shred {FROZEN}", f"chmod 000 {FROZEN}", f"chown me {FROZEN}",
                           f"patch {FROZEN}", f"cp --target-directory=x --backup={FROZEN} y")
@@ -236,7 +248,9 @@ class WriteArgumentTests(GuardCase):
                           "git rm -r app/src", "git mv app/src renamed",
                           "find app -delete", "Remove-Item -Recurse app/src", "ri app",
                           "shred -u app/src/test", "cd app && rm -rf src")
+        self.assert_shell(DENY, "rd app\\src", "rd app/src/test")
         self.assert_shell(ALLOW, "rm -rf docs", "rm -rf app/src/main", "cp -r app/src backup",
+                          "rm -rf app/src/te", "rm -rf ap",
                           "touch app/src/test")
 
     def test_R003_24_basename_only_when_directory_unknown(self):

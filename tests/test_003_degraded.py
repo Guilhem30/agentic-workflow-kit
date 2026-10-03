@@ -1,6 +1,7 @@
 """Spec 003: degraded mode and robustness (R003-27, R003-29 to R003-31)."""
 from __future__ import annotations
 
+import os
 import subprocess
 import unittest
 from unittest import mock
@@ -24,7 +25,7 @@ class DegradedCase(GuardCase):
     def assert_degraded_deny(self, *paths: str, cfg="load") -> None:
         for path in paths:
             with self.subTest(path=path):
-                decision = self.decide(WriteAction([path]), cfg=cfg)
+                decision = self.decide(WriteAction([path]), cfg=cfg, normal=False)
                 self.assertIsInstance(decision, guard.Decision)
                 self.assertEqual(decision.verdict, DENY)
                 self.assertTrue(decision.reason.startswith(PREFIX), decision.reason)
@@ -33,7 +34,7 @@ class DegradedCase(GuardCase):
     def assert_degraded_allow(self, *actions, cfg="load") -> None:
         for action in actions:
             with self.subTest(action=action):
-                decision = self.decide(action, cfg=cfg)
+                decision = self.decide(action, cfg=cfg, normal=False)
                 self.assertEqual(decision.verdict, ALLOW)
                 self.assertIn(ALLOWING, self.stderr)
                 self.assertGreater(len(self.stderr.split(ALLOWING, 1)[1].strip()), 0)
@@ -54,9 +55,20 @@ class DegradedModeTests(DegradedCase):
         self.configure('[chaos]\nenabled = true\nlog = "meta/chaos.jsonl"\n')
         self.assert_degraded_deny("meta/chaos.jsonl")
 
+    def test_R003_27_configured_kit_paths_denied(self):
+        self.configure('[paths]\nlock = "meta/lock.json"\nunfreeze_log = "meta/unfreeze.md"\n'
+                       'specs = "doc/specs"\n')
+        self.write("meta/lock.json", "{ not json\n")
+        self.assert_degraded_deny("meta/lock.json", "meta/unfreeze.md", "doc/specs/003-x/reviews/r.md")
+
+    def test_R003_27_paths_outside_the_repository_allowed(self):
+        self.assert_degraded_allow(WriteAction([str(self.tmp / "elsewhere/tests/test_x.py")]),
+                                   WriteAction(["../elsewhere/tests/test_x.py"]))
+
     def test_R003_27_paths_still_resolve(self):
         self.assert_degraded_deny(str(self.root / "core/src/test/FooTest.kt"))
-        decision = self.decide(WriteAction(["FooTest.kt"]), cwd=self.root / "core/src/test")
+        decision = self.decide(WriteAction(["FooTest.kt"]), cwd=self.root / "core/src/test",
+                               normal=False)
         self.assertEqual(decision.verdict, DENY)
 
     def test_R003_27_everything_else_allowed_with_a_warning(self):
@@ -69,7 +81,7 @@ class DegradedModeTests(DegradedCase):
     def test_R003_27_mixed_actions(self):
         decision = self.decide(WriteAction(["core/src/main/Foo.kt"]),
                                WriteAction(["core/src/test/FooTest.kt"]),
-                               ShellAction("ls"))
+                               ShellAction("ls"), normal=False)
         self.assertEqual(decision.verdict, DENY)
         self.assertTrue(all(r.startswith(PREFIX) for r in decision.reasons), decision.reasons)
 
@@ -79,19 +91,21 @@ class DegradedModeTests(DegradedCase):
         self.assert_degraded_allow(WriteAction(["tests/test_x.py"]))
 
     def test_R003_29_no_git(self):
-        with mock.patch.object(subprocess, "run", side_effect=AssertionError("git called")), \
-                mock.patch.object(subprocess, "Popen", side_effect=AssertionError("git called")):
+        with mock.patch.object(subprocess, "run") as run, \
+                mock.patch.object(subprocess, "Popen") as popen:
             self.assert_degraded_deny("core/src/test/FooTest.kt")
             self.assert_degraded_allow(ShellAction("git commit --no-verify -m x"))
+        run.assert_not_called()
+        popen.assert_not_called()
 
     def test_R003_30_degraded_deny_is_a_normal_decision(self):
-        decision = self.decide(WriteAction(["tests/test_x.py"]))
+        decision = self.decide(WriteAction(["tests/test_x.py"]), normal=False)
         self.assertIsInstance(decision, guard.Decision)
         self.assertEqual(decision.verdict, DENY)
         self.assertEqual(decision.reason, "; ".join(decision.reasons))
 
     def test_R003_30_degraded_allow_warns_on_stderr(self):
-        decision = self.decide(ShellAction("make"))
+        decision = self.decide(ShellAction("make"), normal=False)
         self.assertEqual(decision.verdict, ALLOW)
         self.assertIn(ALLOWING, self.stderr)
 
@@ -115,14 +129,18 @@ class NoConfigurationTests(DegradedCase):
                                   "specs/003-guard/reviews/r.md", cfg=None)
 
     def test_R003_29_root_from_the_working_directory(self):
-        decision = self.decide(WriteAction(["x_test.py"]), cwd=self.root / "tests", cfg=None)
+        os.chdir(self.tmp)  # outside the repository: only the cwd argument leads to the root
+        decision = self.decide(WriteAction(["x_test.py"]), cwd=self.root / "tests", cfg=None,
+                               normal=False)
         self.assertEqual(decision.verdict, DENY)
         self.assertTrue(decision.reason.startswith(PREFIX))
 
 
 class EmptyPayloadTests(GuardCase):
+    """R003-31 at the evaluate() level: a payload that yields no actions is allowed. The stderr
+    warning for a payload that does not parse belongs to the guard command (004)."""
 
-    def test_R003_31_no_actions_allow(self):
+    def test_R003_31_empty_action_list_allows(self):
         decision = self.decide()
         self.assertEqual(decision.verdict, ALLOW)
         self.assertEqual(decision.reasons, [])

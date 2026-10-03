@@ -13,6 +13,7 @@ from tests.support import RepoTestCase
 
 FROZEN = "app/src/test/FooTest.kt"
 REMEDIES = ("owner", "agentkit lock restore")
+DEGRADED = "agentkit guard error"
 
 __all__ = ["ALLOW", "ASK", "DENY", "FROZEN", "GuardCase", "ReadAction", "ShellAction",
            "WriteAction"]
@@ -40,14 +41,20 @@ class GuardCase(RepoTestCase):
         """Rewrite agentkit.toml with extra tables after [kit]."""
         self.write("agentkit.toml", f'[kit]\nprofile = "fixture"\n\n{rest}')
 
-    def decide(self, *actions, cwd: str | Path | None = None, cfg="load") -> guard.Decision:
-        """evaluate() with stderr captured into self.stderr."""
+    def decide(self, *actions, cwd: str | Path | None = None, cfg="load",
+               normal: bool = True) -> guard.Decision:
+        """evaluate() with stderr captured into self.stderr. With normal=True, a fallback to
+        degraded mode (R003-27) fails the test, so an allow cannot come from a crash."""
         config = self.cfg() if cfg == "load" else cfg
         where = None if cwd is None else str(cwd)
         buf = io.StringIO()
         with contextlib.redirect_stderr(buf):
             decision = guard.evaluate(config, list(actions), cwd=where)
         self.stderr = buf.getvalue()
+        if normal:
+            self.assertNotIn(DEGRADED, self.stderr)
+            self.assertFalse(any(r.startswith(DEGRADED) for r in decision.reasons),
+                             decision.reasons)
         return decision
 
     def verdict(self, *actions, cwd=None) -> str:
