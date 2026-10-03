@@ -1,5 +1,5 @@
 """Command-line entry point (spec 000). Dispatches `models` (001), `lock ...` (002),
-`new-spec`, `spec-status` and `trace` (005), `chaos ...` (020) and `autopilot` (021)."""
+`new-spec`, `spec-status` and `trace` (005), `test` (007), `chaos ...` (020) and `autopilot` (021)."""
 from __future__ import annotations
 
 import argparse
@@ -212,6 +212,14 @@ def cmd_trace(args) -> int:
     return code
 
 
+def cmd_test(args) -> int:
+    from agentkit import runtests
+    code, lines = runtests.run_tests(load_config(), args.scope)
+    for line in lines:
+        print(line)
+    return code
+
+
 def cmd_chaos(args) -> int:
     from agentkit import chaos
     return chaos._cli(args)
@@ -270,6 +278,10 @@ def build_parser() -> argparse.ArgumentParser:
     tr = sub.add_parser("trace", help="requirement traceability (005)")
     tr.add_argument("--spec")
     tr.set_defaults(func=cmd_trace)
+
+    te = sub.add_parser("test", help="run the tests, print a compact summary (007)")
+    te.add_argument("scope", nargs="?")
+    te.set_defaults(func=cmd_test)
 
     ch = sub.add_parser("chaos", help="chaos mode: agent-approved gates (020)")
     csub = ch.add_subparsers(dest="chaos_cmd", parser_class=_Parser)
