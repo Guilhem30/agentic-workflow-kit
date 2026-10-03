@@ -1,24 +1,15 @@
 ---
 name: spec
-description: Write or revise a feature spec (EARS requirements with stable IDs, public API contract) and get it reviewed. Use when starting a feature or when the owner asks for spec changes.
+description: Write or revise a draft spec (EARS requirements with stable IDs, public API contract) and get it reviewed. Use for a reserved draft spec or when the owner asks for spec changes.
 metadata:
   agentkit-tier: strong
   agentkit-effort: high
-  agentkit-args: "NNN [slug]"
+  agentkit-args: "NNN"
 ---
 # Spec phase
 
-The spec must be `draft`. If `specs/` has no spec at all, use `/kickoff` instead.
-
-**Numbering a new feature.** If the roadmap in `specs/README.md` already lists it, use that
-number and folder. Otherwise:
-- take one more than the highest existing number, even if lower numbers are free;
-- never reuse a number, including a spec that was retired;
-- the new spec may depend only on lower numbers. If it must come earlier, tell the owner
-  rather than renumbering.
-
-Create `specs/NNN-slug/` with `spec.md`, `plan.md`, `tasks.md` and `progress.md`, then add a row
-to `specs/README.md`.
+The spec must exist and be `draft`. Numbers are assigned elsewhere: `/kickoff` for a new
+project, `/feature` for a new idea. Keep the `depends` front matter accurate.
 
 1. **Context.** Read the `plan.md` sections the spec derives from, the specs it depends on, and
    the relevant ADRs. Nothing else unless a requirement needs it.

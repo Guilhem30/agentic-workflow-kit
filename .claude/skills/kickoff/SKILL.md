@@ -40,7 +40,7 @@ Nothing here is approved until the owner says so.
    dependencies, then the suggested order and the ID format `RNNN-MM`.
 5. **Skeletons.** For every other spec, create `specs/NNN-slug/` with `plan.md`, `tasks.md` and
    `progress.md`, plus a `spec.md` holding:
-   - front matter `id`, `title`, `status: draft`;
+   - front matter `id`, `title`, `status: draft`, `depends: ["MMM", …]`;
    - a Context paragraph with the agreed scope and dependencies;
    - empty sections for the rest.
 

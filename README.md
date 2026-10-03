@@ -34,7 +34,17 @@ The agent then:
 3. writes spec 000 and the index `specs/README.md`, and creates a draft skeleton for every
    other spec.
 
-Numbers are never reused or reshuffled. A feature added later gets the next free number.
+**Adding a feature later.** Run `/feature` with the idea, at any time:
+`/feature Users can export a note as PDF.`
+
+The agent reads the spec index and tells you whether the idea is:
+- a **new spec**, with a number, a slug and its dependencies; or
+- an **amendment** to an existing spec. Amendments past `draft` are your call.
+
+Once you accept, it reserves the numbers with draft skeletons and commits them. Merge that
+commit soon, so that another branch can't take the same number. You can then spec, test and
+build each reserved spec whenever you like, once the specs it depends on are `done`. If you
+abandon an idea, mark it `dropped`: it keeps its number, because numbers are never reused.
 
 Each feature is one spec, `specs/NNN-slug/`, and moves through these phases:
 
@@ -62,6 +72,9 @@ in `tests.unfreeze-log.md`.
 "done" means, what is out of scope, and any must-use or must-avoid technology. Let the agent
 propose the breakdown, then reshape it: merging, splitting or reordering is cheap before any
 spec is written and expensive after.
+
+**Capture ideas as soon as you have them.** `/feature <idea>` costs one short session and
+nothing is built until you approve it. A reserved draft beats an idea lost in chat history.
 
 **Name the phase and the spec, and nothing more.** The skill already holds the procedure:
 `/implement 002` beats a paragraph that explains how to implement. Long prompts cost tokens

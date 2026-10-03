@@ -46,16 +46,16 @@ Every feature goes spec → tests → freeze → implement. Phases (`status:` in
 `draft` → `approved` → `tests-draft` → `tests-approved` → `frozen` → `done`.
 
 **Session start:** find the active spec in `specs/README.md` and read its `progress.md`, which
-has the resume point. Work on one phase of one spec per session. With no spec yet, run the
-`kickoff` skill: it numbers the specs from the owner's idea.
+has the resume point. Work on one phase of one spec per session. Only `kickoff` (new project)
+and `feature` (new idea) assign spec numbers.
 
 ### Hard rules
 1. Frozen files never change: no edit, move, delete or regeneration, by any tool or shell
    command. If a frozen test looks wrong, stop and tell the owner. Only the owner unfreezes.
 2. Never edit `tests.lock.json`, `tests.unfreeze-log.md`, `agentkit.toml` or `.agentkit/`. Never
    commit with `--no-verify`, change `core.hooksPath`, or run `lock unfreeze`.
-3. The owner owns the gates. Set `approved` or `tests-approved` only when the owner said so in
-   this conversation. `frozen` is set only by `lock freeze`.
+3. The owner owns the gates. Set `approved`, `tests-approved` or `dropped` only when the owner
+   said so in this conversation. `frozen` is set only by `lock freeze`.
 4. Make tests pass honestly: no special-casing of test inputs, no skipped or weakened checks.
 5. Every test name starts with the requirement ID it covers.
 
