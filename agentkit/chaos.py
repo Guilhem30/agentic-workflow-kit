@@ -38,18 +38,18 @@ CAUSES = ("rejections", "verify", "audit", "protected", "base", "owner")
 DEFAULT_LOG = "chaos-log.jsonl"
 
 _DEFAULT_ESCALATE_GLOBS = ["{specs}/000-*/**", "AGENTS.md", "CLAUDE.md", "docs/adr/**",
-                          "agentkit.toml", "{roles}/**"]
+                           "agentkit.toml", "{roles}/**"]
 _REQUIRED_PHASE = {"approved": "draft", "tests-approved": "tests-draft",
-                  "frozen": "tests-approved", "done": "frozen"}
+                   "frozen": "tests-approved", "done": "frozen"}
 _HINT = "owner: agentkit chaos log --open"
 _SPEC_RE = re.compile(r"^\d{3}$")
 _COMMON = ("seq", "time", "kind", "commit", "user", "actor")
 _KIND_FIELDS = {
-    "approve": ("spec", "gate", "reviews"),
-    "reject": ("spec", "gate", "reviews"),
-    "escalate": ("spec", "gate", "cause", "detail"),
-    "unfreeze": ("spec", "gate", "files", "reason", "reviews"),
-    "clear": ("escalations", "note"),
+     "approve": ("spec", "gate", "reviews"),
+     "reject": ("spec", "gate", "reviews"),
+     "escalate": ("spec", "gate", "cause", "detail"),
+     "unfreeze": ("spec", "gate", "files", "reason", "reviews"),
+     "clear": ("escalations", "note"),
 }
 
 
@@ -653,8 +653,7 @@ def status_suffix(cfg) -> str:
             return ""
         opened = open_escalations(cfg)
     except (ConfigError, ChaosError) as exc:
-        # Cut to 100 characters: line 1 of status (R006-02) is under 100 before the suffix,
-        # so the whole line stays within 200 (R020-32).
+        # A first cut only. status.py (006) knows all of line 1 and cuts it to 200 (R020-32).
         msg = str(exc)
         return f" | chaos: BROKEN ({msg if len(msg) <= 100 else msg[:99] + '…'})"
     if opened:

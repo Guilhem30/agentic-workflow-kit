@@ -11,6 +11,6 @@
 - [x] `clear`, `log`, `audit` (R020-26 to R020-28)
 - [x] CLI: `chaos` subcommands and exit codes; agent refusal in `spec-status` and `lock freeze` (R020-31)
 - [ ] Guard rules (R020-29, R020-30, R020-42): with 003 (`guard.evaluate`)
-- [ ] Status line and next actions (R020-32 to R020-34): `chaos.status_suffix` done; the rest with 006 (`status.status_lines`)
+- [ ] Status line and next actions (R020-32 to R020-34): `chaos.status_suffix` done; the rest with 006 (`status.status_lines`), which must cut line 1, suffix included, to 200 characters
 - [ ] WORKFLOW.md chaos section (R020-35): with 011
 - [ ] Full suite green; impl-reviewer
