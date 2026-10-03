@@ -1,7 +1,7 @@
 ---
 id: "007"
 title: Compact test runner (agentkit test)
-status: frozen
+status: done
 depends: ["001"]
 ---
 
