@@ -10,6 +10,7 @@
   tests yet. They depend on 020's `chaos` module, which depends on 002, so they cannot be part of
   the bootstrap freeze of 002. Proposal for the owner: write them in `tests/test_002_chaos.py`
   during `/write-tests 020` and freeze them by path then.
+- 2026-10-03: owner approved the tests (`tests/test_002_*.py` and `tests/support.py`); spec moved to `tests-approved`.
 
 <!-- agentkit:snapshot:begin -->
 - 2026-10-03 (UTC), phase `tests-draft`

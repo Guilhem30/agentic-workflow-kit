@@ -8,6 +8,7 @@
 - 2026-10-03: 020 amendment applied: R001-05 also lists `[chaos]`. The `[chaos]` keys are
   validated by 020 (R020-02), so 001 only passes the table through; `test_R001_05_reads_all_tables`
   does not cover `[chaos]` yet (owner may ask for one assertion).
+- 2026-10-03: owner approved the tests (`tests/test_001_*.py`); spec moved to `tests-approved`.
 
 <!-- agentkit:snapshot:begin -->
 - 2026-10-03 (UTC), phase `tests-draft`
