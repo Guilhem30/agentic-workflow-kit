@@ -1,5 +1,5 @@
 """Command-line entry point (spec 000). Dispatches `models` (001), `lock ...` (002),
-`spec-status` and `trace` (005), `chaos ...` (020) and `autopilot` (021)."""
+`new-spec`, `spec-status` and `trace` (005), `chaos ...` (020) and `autopilot` (021)."""
 from __future__ import annotations
 
 import argparse
@@ -179,6 +179,21 @@ def cmd_spec_status(args) -> int:
     return 0
 
 
+def cmd_new_spec(args) -> int:
+    from agentkit import specs
+    if len(args.words) > 2:
+        raise UsageError("new-spec takes [NNN] slug")
+    spec_id, slug = (None, args.words[0]) if len(args.words) == 1 else args.words
+    cfg = load_config()
+    try:
+        folder = specs.new_spec(cfg, spec_id, slug, args.title or "")
+    except ValueError as exc:
+        print(exc)
+        return 1
+    print(f"spec {folder.name[:3]}: created {folder.relative_to(cfg.root).as_posix()}/")
+    return 0
+
+
 def cmd_trace(args) -> int:
     from agentkit import trace
     cfg = load_config()
@@ -232,6 +247,11 @@ def build_parser() -> argparse.ArgumentParser:
     au.add_argument("--base", default="HEAD")
     au.add_argument("--staged", action="store_true")
     lk.set_defaults(func=cmd_lock)
+
+    ns = sub.add_parser("new-spec", help="create a draft spec from the templates (005)")
+    ns.add_argument("words", nargs="+", metavar="[NNN] slug")
+    ns.add_argument("--title")
+    ns.set_defaults(func=cmd_new_spec)
 
     ss = sub.add_parser("spec-status", help="set a spec's phase (005)")
     ss.add_argument("id")

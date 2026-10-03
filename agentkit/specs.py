@@ -82,7 +82,7 @@ def read_spec(folder: Path) -> Spec | None:
     if spec_md.is_file():
         meta, _ = _front_matter(spec_md.read_text(encoding="utf-8", errors="replace"))
     status = _unquote(meta.get("status", "")) or "draft"
-    title = _unquote(meta.get("title", "")) or m.group(2).replace("-", " ").capitalize()
+    title = _unquote(meta.get("title", "")) or _default_title(m.group(2))
     return Spec(id=m.group(1), slug=m.group(2), dir=folder, status=status, title=title,
                 depends=_parse_list(meta.get("depends", "")), spec_md=spec_md)
 
@@ -174,5 +174,50 @@ def spec_requirements(cfg, spec) -> tuple[list[str], set[str]]:
     return testable, excluded
 
 
+_TEMPLATE_FILES = ("spec.md", "plan.md", "tasks.md", "progress.md")
+_ID_RE = re.compile(r"^\d{3}$")
+_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+
+def _templates_dir() -> Path:
+    from agentkit.config import _kit_source
+    return _kit_source() / "workflow" / "templates"
+
+
+def _default_title(slug: str) -> str:
+    return slug.replace("-", " ").capitalize()
+
+
 def new_spec(cfg, spec_id, slug, title="") -> Path:
-    raise NotImplementedError("R005-04")
+    """Create <specs>/NNN-slug/ from the kit templates (R005-04, R005-05, R005-17, R005-19);
+    return the folder. Raises ValueError and creates nothing on a bad number or slug, an
+    existing number or a duplicated one."""
+    if not isinstance(slug, str) or not _SLUG_RE.match(slug):
+        raise ValueError(f"invalid slug {slug!r}: use lower-case letters, digits and hyphens, "
+                         "starting with a letter or digit")
+    existing = list_specs(cfg)
+    if spec_id is None:
+        highest = max((int(s.id) for s in existing), default=-1)
+        if highest >= 999:
+            raise ValueError("no free spec number: 999 is taken")
+        spec_id = f"{highest + 1:03d}"
+    elif not isinstance(spec_id, str) or not _ID_RE.match(spec_id):
+        raise ValueError(f"invalid spec number {spec_id!r}: use three digits")
+    taken = sorted(s.dir.name for s in existing if s.id == spec_id)
+    if len(taken) > 1:
+        raise ValueError(f"duplicate spec number {spec_id}: {', '.join(taken)}")
+    if taken:
+        raise ValueError(f"spec {spec_id} already exists: {taken[0]}")
+    values = {"id": spec_id, "slug": slug, "title": title or _default_title(slug)}
+    src = _templates_dir()
+    rendered = {}
+    for name in _TEMPLATE_FILES:
+        text = (src / name).read_text(encoding="utf-8").replace("\r\n", "\n")
+        for key, value in values.items():
+            text = text.replace("{{" + key + "}}", value)
+        rendered[name] = text
+    folder = cfg.specs_dir / f"{spec_id}-{slug}"
+    folder.mkdir(parents=True, exist_ok=False)
+    for name, text in rendered.items():
+        (folder / name).write_bytes(text.encode("utf-8"))
+    return folder
