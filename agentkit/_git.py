@@ -25,13 +25,13 @@ def toplevel(root: Path) -> Path | None:
     proc = run(root, "rev-parse", "--show-toplevel")
     if proc.returncode != 0:
         return None
-    return Path(proc.stdout.decode("utf-8").strip()).resolve()
+    return Path(proc.stdout.decode("utf-8", "surrogateescape").strip()).resolve()
 
 
 def prefix(root: Path) -> str:
     """The root's path inside the git work tree ('' or 'sub/dir/')."""
     proc = run(root, "rev-parse", "--show-prefix")
-    return proc.stdout.decode("utf-8").strip() if proc.returncode == 0 else ""
+    return proc.stdout.decode("utf-8", "surrogateescape").strip() if proc.returncode == 0 else ""
 
 
 def resolve_commit(root: Path, ref: str) -> str | None:
