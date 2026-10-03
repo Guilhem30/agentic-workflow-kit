@@ -60,8 +60,8 @@ skills and roles from the repo's neutral sources, and `sync --check` fails CI on
 - **R010-10** When `--owner` is given, install shall maintain a block in `.github/CODEOWNERS` that
   assigns the owner to the lock, the unfreeze log, `.agentkit/`, `.githooks/`, every frozen glob,
   the chaos log (`[chaos] log`, default `chaos-log.jsonl`) and `<paths.specs>/*/reviews/` (020).
-- **R010-11** install shall maintain a `.gitignore` block with `.agentkit/state/`, `__pycache__/`
-  and `*.agentkit-new`.
+- **R010-11** install shall maintain a `.gitignore` block with `.agentkit/state/`, `__pycache__/`,
+  `*.agentkit-new` and `.autopilot/` (021).
 
 ### Managed files (3-way)
 - **R010-12** For a managed file, let `new` be the kit's rendered content, `base` the hash
@@ -128,6 +128,8 @@ agentkit/adapters.py: kit_files(name, cfg, src, ctx), derived_files(name, cfg, c
 
 ## Additions beyond plan.md
 
+- Chaos autopilot (021 amendment, approved by the owner on 2026-10-03): `.autopilot/` in the
+  `.gitignore` block (R010-11).
 - Chaos mode (020 amendment, ADR 0002, approved by the owner on 2026-10-03): the chaos log and the
   stored reviews in CODEOWNERS (R010-10).
 - The file-mode model and the block markers (needed for "don't overwrite what you customised"

@@ -52,7 +52,7 @@ and [statusline](https://code.claude.com/docs/en/statusline):
 - **R012-07** The block shall start with the line `@AGENTS.md`, followed by at most 20 lines of
   Claude-only notes:
   - skills are invoked as `/kickoff`, `/feature`, `/spec`, `/write-tests`, `/freeze` (owner
-    only), `/implement` and `/handoff`;
+    only), `/implement`, `/handoff` and `/autopilot` (owner only, chaos mode, 021);
   - the review roles are subagents;
   - `/clear` goes between phases;
   - the compaction preferences (keep the spec ID, phase, failing tests and next task).
@@ -96,6 +96,8 @@ and `adapters/claude-code/statusline.py`. The generator functions are
 
 ## Additions beyond plan.md
 
+- Chaos autopilot (021 amendment, approved by the owner on 2026-10-03): `/autopilot` in the
+  CLAUDE.md block (R012-07).
 - Chaos mode (020 amendment, ADR 0002, approved by the owner on 2026-10-03): denials for the chaos
   log, the stored reviews and `chaos clear` (R012-03).
 - `env.AGENTKIT_AGENT` (used by R002-20).

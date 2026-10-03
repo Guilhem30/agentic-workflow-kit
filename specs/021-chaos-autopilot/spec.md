@@ -1,7 +1,7 @@
 ---
 id: "021"
 title: Chaos autopilot skill
-status: draft
+status: approved
 depends: ["001", "002", "005", "006", "007", "011", "020"]
 ---
 
@@ -315,7 +315,7 @@ second in a row escalates, and the run stops and reports the escalation.
 - Any new gate, check or log record: those are 020's.
 - Proving that the subagents were independent (020, Out of scope).
 
-## Amendments needed in other specs (for the owner to approve)
+## Amendments to other specs (approved by the owner, 2026-10-03; applied 2026-10-03)
 
 - **000**: the command list gains `autopilot` (021).
 - **010**: R010-11's `.gitignore` block gains `.autopilot/`.

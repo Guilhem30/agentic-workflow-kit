@@ -14,7 +14,8 @@ The neutral content that every adapter wires in:
 - `workflow/TOKEN-EFFICIENCY.md` (Part B playbook);
 - `workflow/templates/`;
 - `workflow/roles/` (7 model-neutral role prompts, each with a tier);
-- `skills/` (7 Agent Skills: kickoff, feature, spec, write-tests, freeze, implement, handoff).
+- `skills/` (8 Agent Skills: kickoff, feature, spec, write-tests, freeze, implement, handoff,
+  autopilot).
 
 Much of this content is prose, so many requirements here are `[manual]`. The structural ones are
 tested.
@@ -24,7 +25,8 @@ tested.
 ### Process documents
 - **R011-01** `WORKFLOW.md` shall describe the phases and gates (005), each phase's steps, the
   freeze and unfreeze protocol (002), the enforcement layers and their limits, roles and tiers,
-  session handoff, the spike and bootstrap exceptions, and chaos mode (R020-35). [manual]
+  session handoff, the spike and bootstrap exceptions, and chaos mode with `/autopilot` (R020-35,
+  R021-21, R021-25). [manual]
 - **R011-02** `TOKEN-EFFICIENCY.md` shall contain the 8 sections of plan Part B and a budget
   table matching the defaults of 006, 007 and 009. [manual]
 
@@ -69,14 +71,15 @@ tested.
 
 ### Skills
 - **R011-14** `skills/` shall contain `kickoff`, `feature`, `spec`, `write-tests`, `freeze`,
-  `implement` and `handoff`.
+  `implement`, `handoff` and `autopilot` (021).
   Each SKILL.md follows the Agent Skills standard: `name` equal to the directory, a `description`
   of at most 200 characters, and only standard keys at the top level. Agentkit extras go under
   `metadata` (`agentkit-tier`, `agentkit-effort`, `agentkit-user-only`, `agentkit-args`).
 - **R011-15** The `freeze` skill shall set `agentkit-user-only: "true"` and shall stop when the
-  spec is not `tests-approved`.
-- **R011-16** The tiers shall be: kickoff, feature, spec and write-tests strong/high, implement standard/medium,
-  freeze and handoff fast/low.
+  spec is not `tests-approved`. The `autopilot` skill also sets `agentkit-user-only: "true"`
+  (R021-08).
+- **R011-16** The tiers shall be: kickoff, feature, spec and write-tests strong/high, implement and
+  autopilot standard/medium, freeze and handoff fast/low.
 - **R011-17** Each skill shall name the role it delegates review to, and say what to do when the
   tool has no subagents (apply the role's checklist inline). [manual]
 - **R011-19** The `kickoff` skill shall apply only when the project has no spec. It shall:
@@ -110,6 +113,8 @@ The files and front-matter fields listed above. There is no Python API.
 
 ## Additions beyond plan.md
 
+- Chaos autopilot (021 amendment, approved by the owner on 2026-10-03): the `autopilot` skill
+  (Context, R011-01, R011-14, R011-15, R011-16).
 - Templates `agentkit.toml.tmpl`, `specs-README.md` and `unfreeze-log.md`.
 - The block-size cap (R011-06), and the `metadata` convention for agentkit extras (R011-14).
 - The `kickoff` and `feature` skills and the numbering rules (R011-19 to R011-21) (owner's request, 2026-10-03).

@@ -86,7 +86,7 @@ quality or speed much. The first real user is the kit itself (019).
 The entry point is `agentkit/cli.py: main(argv: list[str] | None = None) -> int`.
 Commands and their specs: `install`, `update`, `sync` (010); `lock …` (002); `guard`, `verify`
 (003, 004); `status`, `handoff` (006); `trace`, `new-spec`, `spec-status` (005); `test` (007);
-`codemap` (008); `lint-instructions` (009); `models` (001); `pre-commit`, `check-commit-msg` (018); `chaos …` (020); `version`.
+`codemap` (008); `lint-instructions` (009); `models` (001); `pre-commit`, `check-commit-msg` (018); `chaos …` (020); `autopilot` (021); `version`.
 
 ## Scope (v1)
 
@@ -116,6 +116,7 @@ The lock cannot protect the kit's tests before the lock exists. So the order for
 
 ## Additions beyond plan.md
 
+- Chaos autopilot (021 amendment, approved by the owner on 2026-10-03): the `autopilot` command.
 - R000-08 (exit code convention), R000-09 and R000-10 make implicit plan intentions explicit.
 - Chaos mode (020 amendment, ADR 0002, approved by the owner on 2026-10-03): the exception in
   principle 5, R000-10, the Owner persona, the Gate term, and the `chaos` command.
