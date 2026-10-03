@@ -26,7 +26,7 @@ class TraceResult:
         return not self.missing
 
 
-class _TraceError(Exception):
+class _TraceError(LookupError):
     """A spec-tree problem (R005-16, R005-19, R005-20); the CLI exits 1."""
 
 

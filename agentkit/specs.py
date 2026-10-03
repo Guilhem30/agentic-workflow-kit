@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -43,7 +44,9 @@ def _front_matter(text: str) -> tuple[dict, tuple[int, int] | None]:
     """Parse the leading `---` block (after an optional BOM) into {key: raw value}; also
     return its span. The first occurrence of a key wins, as in set_status(). A key with an
     empty value followed by indented `- item` lines is a block list, returned as JSON."""
-    lines = text.splitlines(keepends=True)
+    # Lines end at "\n" only, as in set_status() (str.splitlines() also splits on \x0c, \x85...).
+    lines = text.split("\n")
+    lines = [line + "\n" for line in lines[:-1]] + ([lines[-1]] if lines[-1] else [])
     if not lines or lines[0].lstrip(_BOM).strip() != "---":
         return {}, None
     values: dict[str, str] = {}
@@ -55,9 +58,9 @@ def _front_matter(text: str) -> tuple[dict, tuple[int, int] | None]:
             for key, found in items.items():
                 values[key] = json.dumps(found)
             return values, (len(lines[0]), pos)
-        item = re.match(r"^\s+-\s*(.*?)\s*$", line)
+        item = re.match(r"^\s*-(?:\s+(.*?))?\s*$", line)
         if item and last_key is not None and values.get(last_key) == "":
-            items.setdefault(last_key, []).append(_unquote(item.group(1)))
+            items.setdefault(last_key, []).append(_unquote(item.group(1) or ""))
         else:
             m = re.match(r"^([A-Za-z_][\w-]*)\s*:\s*(.*?)\s*$", line)
             last_key = None
@@ -224,8 +227,8 @@ def new_spec(cfg, spec_id, slug, title="") -> Path:
     if taken:
         raise ValueError(f"spec {spec_id} already exists: {taken[0]}")
     title = title or _default_title(slug)
-    if "\n" in title or "\r" in title:
-        raise ValueError("the title must be a single line")
+    if any(unicodedata.category(c) in ("Cc", "Cf", "Zl", "Zp") for c in title):
+        raise ValueError("the title must be a single line without control characters")
     values = {"id": spec_id, "slug": slug, "title": title}
     src = cfg.kit_source / "workflow" / "templates"
     rendered = {}
