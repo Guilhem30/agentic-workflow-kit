@@ -1,7 +1,7 @@
 ---
 id: "009"
 title: Instruction linter (token budgets)
-status: tests-draft
+status: frozen
 depends: ["001"]
 ---
 

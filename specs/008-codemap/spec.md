@@ -1,7 +1,7 @@
 ---
 id: "008"
 title: Code map
-status: tests-draft
+status: frozen
 depends: ["001"]
 ---
 

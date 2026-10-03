@@ -97,6 +97,14 @@
       "sha256": "a8ac9642ae5930a8e7858fbc2d48050a42276899083bb0f4801fea31178bb6e0",
       "spec": "007"
     },
+    "tests/test_008_codemap.py": {
+      "sha256": "015d1fdadf0a4e18cc0bfab7caed552691dd596d5838a00670807e4acbee6762",
+      "spec": "008"
+    },
+    "tests/test_009_lint.py": {
+      "sha256": "66e81fd830d9941ed70b5f9ed3a619e389696989f80058b030ff85a7c13df7a8",
+      "spec": "009"
+    },
     "tests/test_020_approve.py": {
       "sha256": "5c536925fc5685e9f4577a751fc0bf308dc59f8bd01ccfbe301987cc12f13f4b",
       "spec": "020"
