@@ -59,7 +59,7 @@ a smoke test on a tiny fixture repository. Smoke tests do not run the language t
 | rust-cargo | `tests/rules.rs` with `fn r004_07_rejects()` | `r004_07` |
 | dotnet | `Rules.Tests/RuleTests.cs` with `public void R004_07_Rejects()` | `R004_07` |
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - The `python-unittest` profile (the kit uses only the standard library, so it cannot use pytest).
 - Per-profile Windows commands and `ci_setup`.

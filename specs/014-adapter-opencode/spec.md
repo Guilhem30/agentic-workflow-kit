@@ -64,7 +64,7 @@ The generator functions are `adapters.opencode_kit` and `adapters.opencode_deriv
 - Python missing on PATH: an `edit` of `core/src/test/FooTest.kt` is still refused (degraded globs
   rendered into the plugin). An `edit` of `core/src/main/Foo.kt` is allowed with a warning.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - The re-prompt limit (R014-05), the in-plugin degraded mode (R014-03), and the opencode.json bash denials.
 

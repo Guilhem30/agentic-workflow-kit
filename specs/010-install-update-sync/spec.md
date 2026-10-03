@@ -124,7 +124,7 @@ agentkit/adapters.py: kit_files(name, cfg, src, ctx), derived_files(name, cfg, c
 - `render` must leave GitHub's `${{ github.base_ref }}` untouched (unknown key, spaces).
 - A skill is deleted from `.agents/skills/`: sync removes `.claude/skills/<it>/` if it is unchanged.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - The file-mode model and the block markers (needed for "don't overwrite what you customised"
   in shared files such as AGENTS.md).

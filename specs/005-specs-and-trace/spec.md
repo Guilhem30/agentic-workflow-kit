@@ -77,7 +77,7 @@ agentkit/trace.py:
 - spec 004 references R001-05: not counted as a requirement of 004.
 - A test mentions R004-09, which is not declared: warning only.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - The `tests-draft` phase (the plan had approved → tests approved). It marks "tests written,
   waiting for review", so that `status` can tell the owner it is their turn.

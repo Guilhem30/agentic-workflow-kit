@@ -147,7 +147,7 @@ CLI: agentkit lock {freeze,verify,status,unfreeze,restore,audit}
 
 Signing the lock cryptographically. Protection relies on git history, the hooks and CI (018).
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - R002-12: freeze refuses unless the spec is `tests-approved`. This enforces the gate order.
 - R002-31 and R002-32: an owner-only, logged `--force` (owner's decision, 2026-10-03). An agent

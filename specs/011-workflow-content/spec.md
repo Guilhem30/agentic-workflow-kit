@@ -84,7 +84,7 @@ The files and front-matter fields listed above. There is no Python API.
 - `metadata.agentkit-user-only: "true"` on `freeze` becomes `disable-model-invocation: true` in
   the Claude copy (012).
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - Templates `agentkit.toml.tmpl`, `specs-README.md` and `unfreeze-log.md`.
 - The block-size cap (R011-06), and the `metadata` convention for agentkit extras (R011-14).

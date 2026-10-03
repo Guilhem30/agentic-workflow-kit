@@ -1,7 +1,6 @@
 # Plan: Agentic Workflow Kit
 
-Working plan, revised from `plan.bkp` (2026-10-03). `plan.bkp` stays in the repo as the source
-the approved specs cite.
+The working plan (2026-10-03). The approved specs cite its sections.
 
 ## Context
 
@@ -28,7 +27,7 @@ speed much.
 
 ## Where we are
 
-- **Specs 000–019 are approved** (`specs/README.md`). Each spec's *Additions beyond plan.bkp*
+- **Specs 000–019 are approved** (`specs/README.md`). Each spec's *Additions beyond plan.md*
   and *Open questions* sections record the decisions made during review.
 - **Tests for 001 and 002 are written** (`tests/test_001_*.py`, `tests/test_002_*.py`,
   `tests/support.py`) and the specs were clarified to match. They are **awaiting your
@@ -36,7 +35,7 @@ speed much.
 - **Stubs** in `agentkit/` (`config.py`, `lock.py`, `cli.py`, `util.py`) raise
   `NotImplementedError("<REQ-ID>")`. The suite runs 151 tests, and all of them currently error
   on those stubs. That is the expected red state.
-- **`spikes/prototype/`** holds unreviewed code written straight from `plan.bkp`. It is reference
+- **`spikes/prototype/`** holds unreviewed code written straight from an early draft of this plan. It is reference
   material only. Nothing in it ships.
 
 ## Research findings (condensed)
@@ -94,7 +93,7 @@ rules that do not change without an ADR.
 agentic-workflow-kit/
   README.md                 quickstart (2 commands), command list, capability matrix
   AGENTS.md, CLAUDE.md      the kit's own instructions (self-hosted, 019)
-  plan.md                   this plan; plan.bkp is the original
+  plan.md                   this plan
   specs/                    000–019, one folder per spec
   workflow/
     WORKFLOW.md             spec → tests → freeze → implement, gates, roles, unfreeze protocol
@@ -140,7 +139,7 @@ agentic-workflow-kit/
 | `tests.lock.json` + `lock verify` | everything | Source of truth for frozen files |
 | Agent pre-tool guard | Claude Code, Codex, OpenCode, DeepSeek Harness, Pi | **Denies** writes, moves and deletes of frozen paths, edits to lock and guard files, and `lock unfreeze` |
 | Agent end-of-turn verify | same five | Blocks or re-prompts the agent if the lock fails to verify |
-| Agent permission config | Claude Code, Codex, OpenCode | Deny direct edits to lock and log; ask before edits to guard, hooks and CI; deny reads of build outputs |
+| Agent permission config | Claude Code `permissions`, Codex sandbox and approvals, OpenCode `permission` | Deny direct edits to the lock and unfreeze log; ask before edits to the guard, hooks and CI; deny reads of build outputs |
 | git `pre-commit` | any agent or human | Lock verify + instruction lint. `--no-verify` is forbidden by instructions and caught by CI. |
 | CI | any | Lock verify + `sync --check` + tests. CODEOWNERS on tests and lock where the host supports it. |
 
@@ -237,7 +236,7 @@ Each step follows the per-feature cycle below. Order follows `specs/README.md`.
 Commits follow the pattern so far: `spec(NNN)`, `test(NNN)`, `feat(NNN)`, `chore:`. I commit
 only what you have agreed to at each gate.
 
-### Per-spec cycle
+### Per-feature cycle
 
 1. Spec: written, reviewed by the spec-reviewer role, **you approve** (done for 000–019).
 2. Tests: stubs raising `NotImplementedError("<REQ-ID>")` + tests that fail →

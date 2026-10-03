@@ -39,7 +39,7 @@ Facts checked on 2026-10-03 in `packages/hooks/hooks-codex/README.md` of
 
 `adapters/deepseek-harness/profile.yml`; `adapters.dsh_kit(...)` returns no files.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - The plan assumed "same guard, no new code" with full coverage. The bridge's `{command}`-only
   payload makes edit-tool guarding impossible through it. That limitation is documented

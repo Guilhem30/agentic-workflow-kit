@@ -64,7 +64,7 @@ agentkit/handoff.py: snapshot(cfg, spec_id, note="", next_step="", now=None) -> 
 - 9 active specs: lines 1, 2..8 (7 specs), `... 2 more active spec(s)`, `next: …` = 10 lines.
 - Running handoff twice changes only the snapshot block.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - The exact status format, the progress `**Next:**` line, and the snapshot markers.
 

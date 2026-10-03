@@ -63,7 +63,7 @@ agentkit/lint_instructions.py:
 - The same 3-line rule pasted in AGENTS.md and in a skill: error.
 - An AGENTS.md produced by `install` from the template (011) passes with the default budgets.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - The rule file budget (80 lines), the `paths:` warning, the token estimate formula, and the
   name and description rules from the Agent Skills standard.

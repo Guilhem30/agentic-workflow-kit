@@ -71,7 +71,7 @@ agentkit/runtests.py:
 - 200 failing tests: 60 lines, the last one points at the log.
 - A Kotlin compile error: `FAIL (exit 1)`, then the `e: file.kt:12:5 Unresolved reference` lines.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - The cached-results rule (R007-07), the no-JUnit fallback (R007-12), and `last-test.txt`.
 
