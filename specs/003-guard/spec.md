@@ -1,7 +1,7 @@
 ---
 id: "003"
 title: Guard (tool-neutral pre-tool decisions)
-status: tests-approved
+status: frozen
 depends: ["001", "002"]
 ---
 
