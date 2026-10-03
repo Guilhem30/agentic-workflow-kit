@@ -61,6 +61,7 @@ class NewSpecTests(SpecCase):
 
     def test_R005_04_default_title_multi_word(self):
         specs.new_spec(self.cfg(), "012", "adapter-claude-code")
+        self.created("012", "adapter-claude-code", "Adapter claude code")
         self.assertEqual(specs.find_spec(self.cfg(), "012").title, "Adapter claude code")
 
     def test_R005_04_cli(self):
@@ -113,7 +114,7 @@ class NewSpecTests(SpecCase):
             self.refused("007", slug)
             self.refused(None, slug)
             self.assertEqual(self.tree(), before, slug)
-            # A slug that looks like an option is an argparse usage error (exit 2, R000-08).
+            # A slug that looks like an option is an argparse usage error (exit 2, spec 000's usage rule).
             allowed = (1, 2) if slug.startswith("-") else (1,)
             code, _ = run_cli("new-spec", "007", slug)
             self.assertIn(code, allowed, slug)
