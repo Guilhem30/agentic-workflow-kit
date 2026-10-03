@@ -8,9 +8,17 @@ metadata:
 ---
 # Spec phase
 
-The spec must be `draft`. For a new feature, take the next free number, create
-`specs/NNN-slug/` with `spec.md`, `plan.md`, `tasks.md` and `progress.md`, and add a row to
-`specs/README.md`.
+The spec must be `draft`. If `specs/` has no spec at all, use `/kickoff` instead.
+
+**Numbering a new feature.** If the roadmap in `specs/README.md` already lists it, use that
+number and folder. Otherwise:
+- take one more than the highest existing number, even if lower numbers are free;
+- never reuse a number, including a spec that was retired;
+- the new spec may depend only on lower numbers. If it must come earlier, tell the owner
+  rather than renumbering.
+
+Create `specs/NNN-slug/` with `spec.md`, `plan.md`, `tasks.md` and `progress.md`, then add a row
+to `specs/README.md`.
 
 1. **Context.** Read the `plan.md` sections the spec derives from, the specs it depends on, and
    the relevant ADRs. Nothing else unless a requirement needs it.

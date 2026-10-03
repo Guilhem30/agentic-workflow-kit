@@ -27,7 +27,7 @@ produce (same paths, same block markers):
 | `CLAUDE.md` (`@AGENTS.md` + Claude-only notes) | block |
 | `.gitignore` agentkit block | block |
 | `agentkit.toml` (`[models] mode = "kit"`) | once |
-| `.agents/skills/{spec,write-tests,freeze,implement,handoff}/SKILL.md` | managed |
+| `.agents/skills/{kickoff,spec,write-tests,freeze,implement,handoff}/SKILL.md` | managed |
 | `roles/{spec-reviewer,test-auditor,impl-reviewer,summarizer}.md` | project roles (R011-13) |
 | `.claude/skills/*`, `.claude/agents/*` | derived |
 | `.claude/settings.json` (permissions only, no hooks) | managed |

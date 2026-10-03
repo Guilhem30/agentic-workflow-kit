@@ -46,7 +46,8 @@ Every feature goes spec → tests → freeze → implement. Phases (`status:` in
 `draft` → `approved` → `tests-draft` → `tests-approved` → `frozen` → `done`.
 
 **Session start:** find the active spec in `specs/README.md` and read its `progress.md`, which
-has the resume point. Work on one phase of one spec per session.
+has the resume point. Work on one phase of one spec per session. With no spec yet, run the
+`kickoff` skill: it numbers the specs from the owner's idea.
 
 ### Hard rules
 1. Frozen files never change: no edit, move, delete or regeneration, by any tool or shell

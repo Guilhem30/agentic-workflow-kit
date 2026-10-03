@@ -24,6 +24,18 @@ Two people share the work:
 - **You, the owner**, decide what gets built and approve every gate.
 - **The agent** (Claude Code, Codex, OpenCode, …) does the writing.
 
+**Starting a project.** Run `/kickoff` with your idea in a few sentences, for example:
+`/kickoff A CLI that syncs my Markdown notes to a static site. Python, no network at runtime.`
+
+The agent then:
+1. asks you a short batch of questions about scope, stack and constraints;
+2. proposes a numbered breakdown for you to accept or reshape: `000` is the vision and
+   constitution, and features get `001`, `002`, … in dependency order;
+3. writes spec 000 and the index `specs/README.md`, and creates a draft skeleton for every
+   other spec.
+
+Numbers are never reused or reshuffled. A feature added later gets the next free number.
+
 Each feature is one spec, `specs/NNN-slug/`, and moves through these phases:
 
 | Phase | Who acts | What happens | Ends when |
@@ -45,6 +57,11 @@ in `tests.unfreeze-log.md`.
 `/spec 003`, write "Follow `.agents/skills/spec/SKILL.md` for spec 003."
 
 ## Prompting tips
+
+**At kickoff, give the goal and the constraints, not the design.** Say who it is for, what
+"done" means, what is out of scope, and any must-use or must-avoid technology. Let the agent
+propose the breakdown, then reshape it: merging, splitting or reordering is cheap before any
+spec is written and expensive after.
 
 **Name the phase and the spec, and nothing more.** The skill already holds the procedure:
 `/implement 002` beats a paragraph that explains how to implement. Long prompts cost tokens
