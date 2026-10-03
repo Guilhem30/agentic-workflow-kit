@@ -30,7 +30,7 @@ not make. Approve or reject them explicitly.
 | 018 | [githooks-and-ci](018-githooks-and-ci/spec.md) | 002, 009, 010 | Enforcement layers |
 | 019 | [self-hosting-and-docs](019-self-hosting-and-docs/spec.md): README, adapter matrix, the kit installs itself | all | Principle 4, Verification |
 | 020 | [chaos-mode](020-chaos-mode/spec.md): opt-in agent-approved gates, escalation on critical problems | 001, 002, 003, 005, 006 | Owner's idea, 2026-10-03 (not in plan.md) |
-| 021 | [chaos-autopilot](021-chaos-autopilot/spec.md): `/autopilot NNN` runs a spec to done in chaos mode | 011, 020 | Owner's idea, 2026-10-03 (not in plan.md) |
+| 021 | [chaos-autopilot](021-chaos-autopilot/spec.md): `/autopilot NNN` runs a spec to done in chaos mode | 001, 002, 005, 006, 007, 011, 020 | Owner's idea, 2026-10-03 (not in plan.md) |
 
 Suggested order: 000 and 001 first, then 002, 003 and 005 (the core), then 004, 006, 007, 008
 and 009, then 010 and 011, then the adapters, 017, 018 and finally 019.

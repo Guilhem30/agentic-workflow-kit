@@ -2,7 +2,7 @@
 id: "021"
 title: Chaos autopilot skill
 status: draft
-depends: ["002", "005", "011", "020"]
+depends: ["001", "002", "005", "006", "007", "011", "020"]
 ---
 
 # 021 Chaos autopilot skill
@@ -42,6 +42,8 @@ names, verdicts and paths.
 - The **review path** of a gate and role is `.autopilot/<NNN>-<gate>-<role>.md`
   (repo-relative, `/` separators).
 - The spec's **records** are the chaos log records whose `spec` is NNN, in log order.
+- The **full suite** is `{{python}} .agentkit/bin/agentkit test` (R007-01) in the skill, and
+  passes when it exits 0.
 
 ### The next step
 - **R021-01** `autopilot.next_step(cfg, spec_id)` shall return the `Step` for the spec's phase:
@@ -63,12 +65,12 @@ names, verdicts and paths.
   step it is `None`.
 - **R021-22** `last` shall be `#<seq> <kind>` of the spec's newest record, or `None` when it
   has none.
-- **R021-23** `findings` shall be the stored review paths (`reviews[*].review`, R020-09) of the
-  spec's newest record when that record is a `reject` whose gate is the step's gate, or an
-  `unfreeze` while the phase is `tests-draft`; otherwise `[]`. With an `unfreeze`, `reason` is
-  that record's `reason`; otherwise `reason` is `None`.
-- **R021-24** `unfreezes` shall count the spec's `unfreeze` records newer than the newest
-  `clear` record in the log (all of them when there is none).
+- **R021-23** Let R be the spec's newest record that is not an `escalate`. `findings` shall be
+  the stored review paths (`reviews[*].review`, R020-09) of R when R is a `reject` whose gate is
+  the step's gate, or an `unfreeze` while the phase is `tests-draft`; otherwise `[]`. With an
+  `unfreeze`, `reason` is R's `reason`; otherwise `reason` is `None`. (An escalation after a
+  reject, and the owner's `clear`, which has no `spec`, keep the findings.)
+- **R021-24** `unfreezes` shall count the spec's `unfreeze` records.
 - **R021-03** `next_step` shall check, in this order, stopping at the first failure (messages
   exact, `NNN` the spec number):
   1. `ConfigError`: the `[chaos]` table is malformed (R020-02, R020-03);
@@ -78,8 +80,9 @@ names, verdicts and paths.
   4. `AutopilotError`: the chaos log fails R020-37: the `ChaosError` message;
   5. `AutopilotUsageError`: there is no base commit: `no base commit`, hint
      `commit agentkit.toml`;
-  6. `AutopilotError`: two spec folders share NNN (R005-19): `duplicate spec number NNN`, lines
-     the two folders; spec NNN does not exist: `spec NNN does not exist`;
+  6. `AutopilotError`: two or more spec folders share NNN (R005-19):
+     `duplicate spec number NNN`, lines each folder's repo-relative path with `/` separators,
+     sorted; spec NNN does not exist: `spec NNN does not exist`;
   7. `AutopilotError`: chaos does not apply to NNN (including `000`):
      `spec NNN is not under chaos mode`;
   8. `AutopilotError`: the phase is `dropped`: `spec NNN is dropped`; or not a phase of
@@ -91,15 +94,17 @@ names, verdicts and paths.
       `lock.verify` reports violations: `lock violated: <k> file(s)`, lines `<kind> <path>`
       sorted by path, hint `restore with agentkit lock restore or ask the owner`;
   11. `AutopilotError`: the phase is `frozen` and a `depends` entry names a spec that is not
-      `done` or does not exist: `blocked by NNN[, MMM]` (the entries in front-matter order).
-- **R021-04** `next_step` shall write nothing: no file under the root changes, and the chaos
-  log is not appended to.
+      `done` or does not exist: `blocked by NNN[, MMM]` (those entries in front-matter order,
+      each once).
+- **R021-04** `next_step` shall write nothing: no file under the root outside `.git/` changes,
+  and the chaos log is not appended to.
 - **R021-05** `agentkit autopilot NNN` shall print to stdout the Step, one `key: value` line
   each, in this order: `step`, `gate`, `writer`, `reviewer`, `review`, `set-phase`, `then`
   (the `approve` command), `last`, `findings` (paths joined by `, `), `reason`,
   `unfreezes`. `None` and an empty list print `-`. It exits 0, also for `done`.
 - **R021-06** When `next_step` raises, `agentkit autopilot NNN` shall print to stdout
-  `blocked: <message>`, then each detail line indented by two spaces, then `hint: <hint>` when
+  `blocked: <message>`, then each detail line with two more spaces in front (so an escalation
+  line of `format_log` starts at 2 spaces and its detail lines at 4), then `hint: <hint>` when
   the hint is not empty; for `ConfigError` the message is the error text and there is no hint.
   It exits 1 for `AutopilotError`, 2 for `AutopilotUsageError` and `ConfigError`.
 - **R021-07** `agentkit autopilot` with no spec number, more than one, or one that does not
@@ -126,8 +131,10 @@ names, verdicts and paths.
   whether one needs the owner (R020-43). A test-writer that finds the approved spec wrong or
   incomplete reports it instead of writing around it, and the run stops (R021-16). The skill
   then sets `set-phase` when one is printed. [manual]
-- **R021-12** The skill shall then run the reviewer role as a subagent, write the subagent's
-  final report unchanged to the printed review path, and run the printed `then` command. It
+- **R021-12** The skill shall then run the reviewer role as a subagent and write the
+  subagent's final report unchanged to the printed review path. For `implement`, when the
+  verdict passes, it then runs the full suite and stops the run when the suite fails
+  (R021-16). Then it runs the printed `then` command. It
   shall never write, edit or shorten a review's verdict line. When `then` exits 2 because the
   verdict line is invalid (R020-13), the skill shall ask the reviewer once for the same report
   ending with exactly one verdict line, and stop on a second failure. [manual]
@@ -144,31 +151,37 @@ names, verdicts and paths.
   says (without its commit step), stage every change (`git add -A`; the chaos log and the
   spec's `reviews/` included) and commit with the type of the gate: `approved` → `spec(NNN)`,
   `tests-approved` and `frozen` → `test(NNN)`, `done` → `feat(NNN)`; an agent unfreeze →
-  `test(NNN): agent unfreeze`. After `done` it first runs the full test suite; when the suite
-  fails, it commits nothing and stops (R021-16). It shall never commit with `--no-verify`.
-  [manual]
+  `test(NNN): agent unfreeze` (this commit also holds the implementer's work in progress). It
+  shall never commit with `--no-verify`. [manual]
 - **R021-16** The skill shall stop the run, change nothing more, and report to the owner when:
   - `agentkit autopilot` exits non-zero (the report quotes its output);
-  - a chaos command ends other than as R021-13 continues (the report quotes its output, and
-    names the escalation when `last` is an `escalate`);
+  - a chaos command ends other than as R021-13 continues (the report quotes its output and the
+    `blocked:` lines of a new `agentkit autopilot NNN`);
   - the same `step` and `last` come back after a full iteration of R021-10;
   - a writer or reviewer subagent returns no report, or a test-writer reports a spec gap;
-  - a commit fails twice in a row, or the full suite fails after `done`;
+  - a commit fails twice in a row, or the full suite fails before `done` (R021-12);
   - a second agent unfreeze would be needed (R021-18).
 
   The report says what is blocked, why, and the command for the owner
-  (`agentkit chaos log --open` for an escalation). [manual]
+  (`agentkit chaos log --open` for an escalation; `agentkit lock unfreeze <path> --reason …`
+  for a second unfreeze). [manual]
 - **R021-17** The skill shall never run `chaos clear`, `lock unfreeze`, `lock freeze --force`,
-  or `spec-status` with `approved`, `tests-approved` or `done`, and never edit the chaos log,
+  or `spec-status` with `approved`, `tests-approved`, `done` or `dropped`, and never edit the
+  chaos log,
   `reviews/` or a frozen file. [manual]
-- **R021-18** During `implement`, when the implementer reports a frozen test that it judges
-  wrong, the skill shall stop the implementer. When `unfreezes` is 1 or more, the run stops
-  (R021-16). Otherwise it runs the test-auditor and then the impl-reviewer on that test with
-  the implementer's reason, writes their reports to `.autopilot/<NNN>-unfreeze-<role>.md`, and
-  runs `agentkit chaos unfreeze` with them. On exit 0 it commits (R021-15), and the loop goes on
-  at `review-tests`, where the test-writer fixes the test from the unfreeze `findings` and
-  `reason` before the review. On exit 1 with a new `reject`, the implementer goes on without
-  touching the test. Anything else stops the run. [manual]
+- **R021-18** During `implement`, the implementer stops and reports when it judges a frozen
+  test wrong, naming the test files and its reason. When `unfreezes` is 1 or more, the run
+  stops (R021-16): one agent unfreeze per spec; further ones are the owner's `lock unfreeze`.
+  Otherwise the skill runs the test-auditor and then the impl-reviewer on those tests with the
+  reason, writes their reports to `.autopilot/<NNN>-unfreeze-<role>.md`, and runs
+  `agentkit chaos unfreeze <paths> --reason "<reason>" --auditor-review
+  .autopilot/<NNN>-unfreeze-test-auditor.md --impl-review
+  .autopilot/<NNN>-unfreeze-impl-reviewer.md`. On exit 0 it commits (R021-15), and the loop goes
+  on at `review-tests`, where the test-writer fixes the tests from the unfreeze `findings` and
+  `reason` before the review. On exit 1 with a new `reject` (`last`), the implementer goes on
+  without touching the tests and is given that reject's stored reviews
+  (`<spec dir>/reviews/<seq>-unfreeze-<role>.md`, R020-14). Anything else stops the run.
+  [manual]
 - **R021-19** Where the tool has no subagents, the skill shall do the writer's and the
   reviewer's work inline, from the role files, and after each gate passes and is committed,
   stop and tell the owner to clear the context and run `/autopilot NNN` again. [manual]
@@ -240,10 +253,21 @@ unfreezes: 0
 | 012 `tests-approved` | `step: freeze`, `review: -`, `then: agentkit chaos approve 012 frozen` |
 | 012 `frozen`, 004 `frozen` | exit 1, `blocked: blocked by 004` |
 | 012 `done` | `step: done`, `then: -`, exit 0 |
-| chaos paused by escalation #3 | exit 1: `blocked: chaos mode is paused: 1 open escalation(s)`, the `#3` line and its detail indented, `hint: owner: agentkit chaos log --open` |
+| chaos paused by escalation #3 | exit 1, see below |
+| 012 `draft`, records `#4 reject`, `#5 reject`, `#6 escalate` of `approved`, then the owner's `#7 clear` | `step: spec`, `last: #6 escalate`, `findings: specs/012-…/reviews/5-approved-spec-reviewer.md` |
 | `[chaos]` absent | exit 2: `blocked: chaos mode is off: the owner approves gates`, `hint: use /spec, /write-tests, /implement` |
 | `agentkit autopilot 013` (not listed) | exit 1: `blocked: spec 013 is not under chaos mode` |
 | `agentkit autopilot 12` | exit 2, usage on stderr |
+
+Paused by escalation #3 (`rejections` of 012 `approved`, after rejects #1 and #2):
+
+```text
+blocked: chaos mode is paused: 1 open escalation(s)
+  #3 2026-10-03T10:00:00Z escalate 012 approved rejections (agent)
+    #1
+    #2
+hint: owner: agentkit chaos log --open
+```
 
 A full run of `/autopilot 012` from `draft`: spec-writer drafts, spec-reviewer reviews, `chaos
 approve 012 approved` (commit `spec(012)`); test-writer writes tests, `spec-status 012
@@ -289,7 +313,8 @@ The whole spec is the owner's idea of 2026-10-03, not in plan.md. Design choices
 - `/autopilot` is owner-only (`agentkit-user-only`), like `/freeze`.
 - One commit per gate, with `progress.md` in it; stop on any outcome that is not a pass or a
   fresh reject (R021-13, R021-16).
-- At most one agent unfreeze per spec until the owner's next `clear` (R021-18, R021-24).
+- At most one agent unfreeze per spec; further ones are the owner's (R021-18, R021-24).
+- The full suite runs after the impl-reviewer passes and before `chaos approve NNN done`.
 - One retry of a reviewer whose verdict line is invalid (R021-12).
 - A blocked dependency stops the run instead of running the dependency.
 - Without subagents, one gate per session (R021-19).
@@ -297,8 +322,10 @@ The whole spec is the owner's idea of 2026-10-03, not in plan.md. Design choices
 
 ## Open questions
 
-1. Agent unfreeze during a run (R021-18): allow one per spec until the owner's next `clear` (as
-   drafted), none (stop and ask the owner), or any number (020 bounds it through rejections)?
+1. Agent unfreeze during a run (R021-18): allow one per spec, after which only the owner
+   unfreezes with `lock unfreeze` (as drafted; a `clear` cannot reset it, since this stop writes
+   no escalation), none (stop and ask the owner), or any number (020 bounds it through
+   rejections)?
 2. Should `/autopilot` with a blocked dependency that is itself under chaos mode run that
    dependency first (drafted: no, out of scope)?
 3. Commit per gate (drafted), or one commit at the end of the run?
