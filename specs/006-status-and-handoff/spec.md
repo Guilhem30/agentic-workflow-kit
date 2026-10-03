@@ -1,7 +1,7 @@
 ---
 id: "006"
 title: Status and handoff
-status: frozen
+status: done
 depends: ["002", "005"]
 ---
 
