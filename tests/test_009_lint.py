@@ -32,6 +32,9 @@ class LintCase(RepoTestCase):
     def errors_about(self, report, needle):
         return [e for e in report.errors if needle in e]
 
+    def skill_errors(self, report, dirname="demo"):
+        return [e for e in report.errors if "SKILL.md" in e or dirname in e]
+
 
 class TestInputs(LintCase):
     def test_R009_01_checked_files(self):
@@ -52,7 +55,7 @@ class TestInputs(LintCase):
     def test_R009_01_configured_skills_path(self):
         self.write("agentkit.toml", '[kit]\nprofile = "fixture"\n\n[paths]\nskills = "my/skills"\n')
         self.write("my/skills/demo/SKILL.md", skill(name="other"))
-        self.assertTrue(self.errors_about(self.lint(), "SKILL.md"))
+        self.assertTrue(self.skill_errors(self.lint()))
 
     def test_R009_02_default_budgets(self):
         self.write("AGENTS.md", lines(150))
@@ -62,12 +65,20 @@ class TestInputs(LintCase):
         self.assertEqual(self.lint().errors, [])
 
     def test_R009_02_configured_budgets(self):
-        self.budgets("agents_md_lines = 10\nclaude_md_lines = 2")
-        self.write("AGENTS.md", lines(11))
+        self.budgets("agents_md_lines = 10\nclaude_md_lines = 2\nrule_md_lines = 6\nskill_md_lines = 8")
+        self.write("AGENTS.md", lines(10))
         self.write("CLAUDE.md", "@AGENTS.md\nx\n")
+        self.write(".claude/rules/r.md", "---\npaths: [\"src/**\"]\n---\n" + lines(3, "rule"))
+        self.write(".agents/skills/demo/SKILL.md", skill(body=lines(4, "skill")))
+        self.assertEqual(self.lint().errors, [])
+        self.write("AGENTS.md", lines(11))
+        self.write("CLAUDE.md", "@AGENTS.md\nx\ny\n")
+        self.write(".claude/rules/r.md", "---\npaths: [\"src/**\"]\n---\n" + lines(4, "rule"))
+        self.write(".agents/skills/demo/SKILL.md", skill(body=lines(5, "skill")))
         report = self.lint()
-        self.assertTrue(self.errors_about(report, "AGENTS.md"))
-        self.assertFalse([e for e in report.errors if "CLAUDE.md" in e and "AGENTS" not in e])
+        for f in ("AGENTS.md", "CLAUDE.md", "r.md", "SKILL.md"):
+            self.assertTrue([e for e in report.errors if f in e and (f != "AGENTS.md" or "CLAUDE" not in e)],
+                            (f, report.errors))
 
 
 class TestErrors(LintCase):
@@ -82,7 +93,7 @@ class TestErrors(LintCase):
     def test_R009_04_claude_md_must_import(self):
         self.write("AGENTS.md", lines(5))
         self.write("CLAUDE.md", "Some notes for Claude only.\n")
-        self.assertTrue(self.errors_about(self.lint(), "@AGENTS.md"))
+        self.assertTrue(self.errors_about(self.lint(), "CLAUDE.md"))
         self.write("CLAUDE.md", "@AGENTS.md\n\nSome notes for Claude only.\n")
         self.assertEqual(self.lint().errors, [])
 
@@ -100,12 +111,12 @@ class TestErrors(LintCase):
             with self.subTest(label=label):
                 d = "Demo_Skill" if label == "pattern" else "demo"
                 self.write(f".agents/skills/{d}/SKILL.md", text)
-                self.assertTrue(self.errors_about(self.lint(), "SKILL.md"), label)
+                self.assertTrue(self.skill_errors(self.lint(), d), label)
                 (self.root / f".agents/skills/{d}/SKILL.md").unlink()
         for name in ("a" * 65, "-lead", "trail-", "two--dashes"):
             with self.subTest(name=name):
                 self.write(f".agents/skills/{name}/SKILL.md", skill(name=name))
-                self.assertTrue(self.errors_about(self.lint(), name), name)
+                self.assertTrue(self.skill_errors(self.lint(), name), name)
                 (self.root / f".agents/skills/{name}/SKILL.md").unlink()
 
     def test_R009_05_valid_names(self):
@@ -115,14 +126,14 @@ class TestErrors(LintCase):
 
     def test_R009_06_skill_description(self):
         self.write(".agents/skills/demo/SKILL.md", skill(description=None))
-        self.assertTrue(self.errors_about(self.lint(), "SKILL.md"))
+        self.assertTrue(self.skill_errors(self.lint()))
         self.write(".agents/skills/demo/SKILL.md", skill(description="d" * 201))
-        self.assertTrue(self.errors_about(self.lint(), "SKILL.md"))
+        self.assertTrue(self.skill_errors(self.lint()))
         self.write(".agents/skills/demo/SKILL.md", skill(description="d" * 200))
         self.assertEqual(self.lint().errors, [])
         self.budgets("skill_description_chars = 50")
         self.write(".agents/skills/demo/SKILL.md", skill(description="d" * 51))
-        self.assertTrue(self.errors_about(self.lint(), "SKILL.md"))
+        self.assertTrue(self.skill_errors(self.lint()))
 
     BLOCK = ("Run the full suite before each commit.\n"
              "Never edit frozen files under any circumstances.\n"
@@ -152,7 +163,32 @@ class TestErrors(LintCase):
         self.write(".agents/skills/demo/SKILL.md", skill(body=two))
         self.assertEqual(self.lint().errors, [])
         self.budgets("duplicate_min_lines = 2")
-        self.assertTrue(self.lint().errors)
+        report = self.lint()
+        self.assertEqual(len([e for e in report.errors if "AGENTS.md" in e and "SKILL.md" in e]), 1,
+                         report.errors)
+
+    def test_R009_07_must_be_consecutive(self):
+        a, b, c = self.BLOCK.splitlines(keepends=True)
+        self.write("AGENTS.md", self.BLOCK)
+        self.write(".agents/skills/demo/SKILL.md",
+                   skill(body=a + b + "A completely different instruction sits here.\n" + c))
+        self.assertEqual(self.lint().errors, [])
+
+    def test_R009_07_generated_copy_not_a_duplicate(self):
+        body = "Intro text for the skill body.\n" + self.BLOCK
+        self.write(".agents/skills/demo/SKILL.md", skill(body=body))
+        self.write(".claude/skills/demo/SKILL.md", skill(body=body))
+        self.assertEqual(self.lint().errors, [])
+
+    def test_R009_08_twelve_character_threshold(self):
+        twelve = "abcdefghijkl\nmnopqrstuvwx\nyzabcdefghij\n"
+        eleven = "abcdefghijk\nmnopqrstuvw\nyzabcdefghi\n"
+        self.write("AGENTS.md", eleven)
+        self.write(".agents/skills/demo/SKILL.md", skill(body=eleven))
+        self.assertEqual(self.lint().errors, [])
+        self.write("AGENTS.md", twelve)
+        self.write(".agents/skills/demo/SKILL.md", skill(body=twelve))
+        self.assertTrue([e for e in self.lint().errors if "AGENTS.md" in e and "SKILL.md" in e])
 
     def test_R009_07_same_file_repeat_ok(self):
         self.write("AGENTS.md", self.BLOCK + "\nAnother paragraph of guidance here.\n\n" + self.BLOCK)
@@ -163,6 +199,7 @@ class TestErrors(LintCase):
                    "- Run the full   suite before each commit.\n"
                    "\n"
                    "1. NEVER edit frozen files under any circumstances.\n"
+                   "```\n"
                    "```\n"
                    "> Hand verbose work to a summarizer subagent.\n")
         self.write(".agents/skills/demo/SKILL.md", skill(body=
@@ -177,8 +214,10 @@ class TestErrors(LintCase):
     def test_R009_08_short_lines_and_front_matter_ignored(self):
         short = "Do this.\nDo that.\nThen go.\n"
         self.write("AGENTS.md", short)
-        self.write(".claude/rules/a.md", "---\npaths: [\"src/**\"]\nowner: the team lead person\n---\n" + short)
-        self.write(".claude/rules/b.md", "---\npaths: [\"src/**\"]\nowner: the team lead person\n---\nUnrelated rule text here.\n")
+        fm = ("---\npaths: [\"src/**\", \"lib/**\"]\nowner: the team lead person\n"
+              "reviewer: the second team member\nsummary: shared front matter text\n---\n")
+        self.write(".claude/rules/a.md", fm + short)
+        self.write(".claude/rules/b.md", fm + "Unrelated rule text here.\n")
         self.assertEqual(self.lint().errors, [])
 
 
@@ -186,8 +225,10 @@ class TestReport(LintCase):
     def test_R009_09_rule_without_paths_warns(self):
         self.write(".claude/rules/always.md", "Always loaded rule text.\n")
         self.write(".claude/rules/scoped.md", "---\npaths: [\"src/**\"]\n---\nScoped rule text.\n")
+        self.write(".claude/rules/other.md", "---\ndescription: no paths here\n---\nOther rule text.\n")
         report = self.lint()
         self.assertTrue([w for w in report.warnings if "always.md" in w])
+        self.assertTrue([w for w in report.warnings if "other.md" in w])
         self.assertFalse([w for w in report.warnings if "scoped.md" in w])
         self.assertEqual(report.errors, [])
 
@@ -198,6 +239,7 @@ class TestReport(LintCase):
         self.assertEqual(estimate_tokens("abcd"), 1)
         self.assertEqual(estimate_tokens("abcde"), 2)
         self.assertEqual(estimate_tokens("x" * 4001), 1001)
+        self.assertEqual(estimate_tokens("éééé"), 1)
 
     def test_R009_10_always_loaded_sum(self):
         agents = "A" * 399 + "\n"           # 400 chars
@@ -219,6 +261,15 @@ class TestReport(LintCase):
         self.assertEqual(report.errors, [])
         self.assertTrue(report.ok)
         self.assertTrue(report.warnings)
+
+    def test_R009_11_at_budget_no_warning(self):
+        self.budgets("always_loaded_tokens = 100")
+        self.write("AGENTS.md", "A" * 399 + "\n")  # exactly 100 tokens
+        report = self.lint()
+        self.assertEqual(report.always_loaded_tokens, 100)
+        self.assertEqual(report.warnings, [])
+        self.write("AGENTS.md", "A" * 400 + "\n")  # 101 tokens
+        self.assertTrue(self.lint().warnings)
 
     def test_R009_12_last_line_ok(self):
         self.write("AGENTS.md", "A" * 399 + "\n")
