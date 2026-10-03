@@ -227,7 +227,7 @@ def new_spec(cfg, spec_id, slug, title="") -> Path:
     if taken:
         raise ValueError(f"spec {spec_id} already exists: {taken[0]}")
     title = title or _default_title(slug)
-    if any(unicodedata.category(c) in ("Cc", "Cf", "Zl", "Zp") for c in title):
+    if any(unicodedata.category(c) in ("Cc", "Cf", "Cs", "Zl", "Zp") for c in title):
         raise ValueError("the title must be a single line without control characters")
     values = {"id": spec_id, "slug": slug, "title": title}
     src = cfg.kit_source / "workflow" / "templates"
@@ -236,12 +236,12 @@ def new_spec(cfg, spec_id, slug, title="") -> Path:
         text = (src / name).read_text(encoding="utf-8").replace("\r\n", "\n")
         for key, value in values.items():
             text = text.replace("{{" + key + "}}", value)
-        rendered[name] = text
+        rendered[name] = text.encode("utf-8")  # fails here, before anything is created
     folder = cfg.specs_dir / f"{spec_id}-{slug}"
     try:
         folder.mkdir(parents=True, exist_ok=False)
     except OSError as exc:  # for example a case-insensitive clash with an ignored folder
         raise ValueError(f"cannot create {folder.name}: {exc}") from exc
     for name, text in rendered.items():
-        (folder / name).write_bytes(text.encode("utf-8"))
+        (folder / name).write_bytes(text)
     return folder
