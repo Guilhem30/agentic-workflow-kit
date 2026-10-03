@@ -43,7 +43,9 @@ test.
 
 ## Resume point (2026-10-03)
 
-Chaos mode (020) is on: agents pass gates with `agentkit chaos approve` and reviewer verdicts;
-see `specs/020-chaos-mode/progress.md` for the per-spec cycle. Done: 001, 002, 003, 005. Frozen: 020
-(status parts wait for 006). Next: 004, then 022 (draft, small), then the order in `docs/priorities.md`. No open owner
-questions (all settled 2026-10-03).
+Chaos mode (020) is on: agents pass gates with `agentkit chaos approve` and reviewer verdicts
+(cycle in `specs/020-chaos-mode/progress.md`). Done: 001, 002, 003, 005, 006, 007, 008, 009.
+`agentkit status` shows the rest. Built for token savings first (`docs/priorities.md`): use
+`agentkit test`, `agentkit status`, `agentkit codemap`, `agentkit lint-instructions`.
+Next: 004 (tests in progress), 022 (draft), 010, 011, 012. 020 goes `done` once 011 writes its
+WORKFLOW.md section. 011/012/019 touch protected files: expect an escalation for the owner.
