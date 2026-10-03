@@ -160,6 +160,16 @@ class MalformedTableGateTests(ChaosCase):
         self.assertEqual(code, 2)
         self.assertEqual(self.spec_status("012"), "draft")
 
+    def test_R020_31_malformed_table_freeze_exit_2_for_agents(self):
+        self.agent()
+        self.spec("012", "tests-approved")
+        self.write("tests/test_012_x.py", f"# {rid('012', '01')}\n")
+        code, _ = run_cli("lock", "freeze", "--spec", "012")
+        self.assertEqual(code, 2)
+        self.assertFalse(self.lock_file.exists())
+        code, _ = run_cli("spec-status", "012", "tests-draft")
+        self.assertEqual(code, 0)  # not a gate move
+
     def test_R020_31_malformed_table_ignored_outside_agents(self):
         code, _ = run_cli("spec-status", "012", "approved")
         self.assertEqual(code, 0)
@@ -200,7 +210,7 @@ class StatusSuffixTests(StatusCase):
         self.assertLessEqual(len(line), 200)
 
     def test_R020_32_broken_log(self):
-        self.chaos_log.write_text("{broken\n" + "x" * 400 + "\n", encoding="utf-8")
+        self.write(self.chaos_log, "{broken\n" + "x" * 400 + "\n")
         line = self.lines()[0]
         self.assertIn(" | chaos: BROKEN (", line)
         self.assertLessEqual(len(line), 200)

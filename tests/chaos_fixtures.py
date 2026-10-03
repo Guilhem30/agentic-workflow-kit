@@ -37,6 +37,10 @@ class ChaosCase(RepoTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        # A developer's global or system git config (for example a global ignore of *.jsonl)
+        # must not change what git lists or commits here.
+        os.environ["GIT_CONFIG_GLOBAL"] = str(self.write(self.tmp / "empty.gitconfig", ""))
+        os.environ["GIT_CONFIG_NOSYSTEM"] = "1"
         for num, status in self.SPECS.items():
             self.spec(num, status)
         if self.USE_GIT:
@@ -59,7 +63,7 @@ class ChaosCase(RepoTestCase):
         """Write a review file outside the repository; return its absolute path."""
         path = self.tmp / "reviews-in" / f"{name}.md"
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(f"# Review\n\n{body}\n{last_line}\n", encoding="utf-8")
+        path.write_bytes(f"# Review\n\n{body}\n{last_line}\n".encode("utf-8"))  # LF everywhere
         return str(path)
 
     def agent(self) -> None:
@@ -79,7 +83,7 @@ class ChaosCase(RepoTestCase):
         return [r["kind"] for r in self.records()]
 
     def write_log(self, records: list[dict]) -> None:
-        self.chaos_log.write_text("".join(dumps(r) + "\n" for r in records), encoding="utf-8")
+        self.write(self.chaos_log, "".join(dumps(r) + "\n" for r in records))
 
     def record(self, seq: int, kind: str, **fields) -> dict:
         """A valid record with the common fields of R020-08; `commit` defaults to HEAD."""

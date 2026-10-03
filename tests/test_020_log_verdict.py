@@ -205,10 +205,10 @@ class ReadLogTests(ChaosCase):
         return self.record(seq, "clear", escalations=[], note="looked at it")
 
     def assert_bad(self, lines: list[str], line_no: int):
-        self.chaos_log.write_text("".join(line + "\n" for line in lines), encoding="utf-8")
+        self.write(self.chaos_log, "".join(line + "\n" for line in lines))
         with self.assertRaises(chaos.ChaosError) as ctx:
             chaos.read_log(self.cfg())
-        self.assertIn(str(line_no), str(ctx.exception))
+        self.assertRegex(str(ctx.exception), rf"\b{line_no}\b")
 
     def test_R020_37_missing_log_reads_as_empty(self):
         self.assertEqual(chaos.read_log(self.cfg()), [])
@@ -257,12 +257,13 @@ class ReadLogTests(ChaosCase):
         self.assert_bad([dumps(self.valid(1)), dumps(self.valid(5))], 2)
 
     def test_R020_37_malformed_log_stops_approve(self):
-        self.chaos_log.write_text("{not json\n", encoding="utf-8")
+        self.write(self.chaos_log, "{not json\n")
         self.commit_all("bad log")
         before = self.chaos_log.read_bytes()
         code, out = run_cli("chaos", "approve", "012", "approved", "--review", self.review(SPEC_PASS))
         self.assertEqual(code, 1)
-        self.assertIn("1", out)
+        self.assertRegex(out, r"\b1\b")
+        self.assertIn("chaos-log.jsonl", out)
         self.assertEqual(self.chaos_log.read_bytes(), before)
         self.assertEqual(self.spec_status("012"), "draft")
 

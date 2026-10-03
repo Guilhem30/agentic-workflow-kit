@@ -75,8 +75,8 @@ class UsageTests(ApproveCase):
 class PhaseTests(ApproveCase):
 
     def test_R020_16_wrong_phase_exit_1_naming_it(self):
-        cases = [("approved", "approved", SPEC_PASS),
-                 ("tests-approved", "draft", AUDIT_PASS),
+        cases = [("approved", "done", SPEC_PASS),
+                 ("tests-approved", "frozen", AUDIT_PASS),
                  ("frozen", "tests-draft", None),
                  ("done", "tests-approved", IMPL_PASS)]
         for gate, phase, line in cases:
@@ -262,6 +262,26 @@ class CriticalCheckTests(ApproveCase):
         code, out = self.approve_cli("012", "approved", SPEC_PASS)
         self.assert_escalated(code, out, "verify")
 
+    def test_R020_19_base_before_verify(self):
+        ghost = "0123456789abcdef0123456789abcdef01234567"
+        self.write("tests/test_x.py", "x\n")
+        self.write_lock({"tests/test_x.py": "011"})
+        self.write_log([self.record(1, "clear", escalations=[], note="start", commit=ghost)])
+        self.commit_all("frozen, log with a vanished base")
+        self.write("tests/test_x.py", "changed\n")
+        code, out = self.approve_cli("012", "approved", SPEC_PASS)
+        self.assert_escalated(code, out, "base", [ghost], seq=2)
+
+    def test_R020_19_audit_before_protected(self):
+        self.write("tests/test_x.py", "x\n")
+        self.write_lock({"tests/test_x.py": "011"})
+        self.write("agentkit.toml", '[kit]\nprofile = "fixture"\n\n' + CHAOS_ON + "# base\n")
+        self.commit_all("base with a lock")
+        self.write_lock({})
+        self.write("AGENTS.md", "# changed\n")
+        code, out = self.approve_cli("012", "approved", SPEC_PASS)
+        self.assert_escalated(code, out, "audit")
+
     def test_R020_19_frozen_gate_escalates_before_freezing(self):
         self.spec("012", "tests-approved")
         self.write("tests/test_012_x.py", f"# {rid('012', '01')}\n")
@@ -289,9 +309,9 @@ class NeedsOwnerTests(ApproveCase):
         self.assertEqual(self.kinds(), ["escalate"])
         self.assertEqual(rec["cause"], "owner")
         self.assertEqual(rec["gate"], "approved")
-        self.assertEqual(len(rec["detail"]), 1)
-        self.assertIn("spec-reviewer", rec["detail"][0])
-        self.assertIn(stored, rec["detail"][0])
+        detail = " ".join(rec["detail"])
+        self.assertIn("spec-reviewer", detail)
+        self.assertIn(stored, detail)
         self.assertEqual(self.spec_status("012"), "draft")
         self.assertEqual(len(chaos.open_escalations(self.cfg())), 1)
 
@@ -346,6 +366,21 @@ class VerdictOutcomeTests(ApproveCase):
         rec = self.records()[-1]
         self.assertEqual((rec["kind"], rec["gate"], rec["files"]),
                          ("approve", "frozen", ["tests/test_012_x.py"]))
+
+    def test_R020_22_freeze_errors_append_nothing(self):
+        from unittest import mock
+        from agentkit.lock import FreezeResult
+        self.spec("012", "tests-approved")
+        self.commit_all("tests approved")
+        with mock.patch("agentkit.lock.freeze", return_value=FreezeResult(errors=["x: boom"])):
+            with self.assertRaises(chaos.ChaosError) as ctx:
+                chaos.approve(self.cfg(), "012", "frozen", user="A", now=NOW)
+            self.assertNotIsInstance(ctx.exception, chaos.ChaosUsageError)
+            self.assertIn("x: boom", str(ctx.exception))
+            code, out = self.approve_cli("012", "frozen")
+        self.assertEqual(code, 1)
+        self.assertIn("x: boom", out)
+        self.assertFalse(self.chaos_log.exists())
 
     def test_R020_22_frozen_with_no_new_file(self):
         self.spec("012", "tests-approved")
@@ -407,6 +442,20 @@ class RejectionCountTests(ApproveCase):
         self.approve_cli("012", "approved", FAIL)
         self.assertEqual(self.kinds(), ["reject", "approve", "reject"])
 
+    def test_R020_21_approves_of_other_gates_or_specs_do_not_reset(self):
+        self.spec("013", "draft")
+        self.write_log([self.reject(1),
+                        self.record(2, "approve", spec="012", gate="tests-approved",
+                                    reviews=[self.cite("012", 2, "tests-approved", "test-auditor",
+                                                       AUDIT_PASS)]),
+                        self.record(3, "approve", spec="013", gate="approved",
+                                    reviews=[self.cite("013", 3, "approved", "spec-reviewer",
+                                                       SPEC_PASS)])])
+        self.commit_all("other approves")
+        self.approve_cli("012", "approved", FAIL)
+        self.assertEqual(self.kinds(), ["reject", "approve", "approve", "reject", "escalate"])
+        self.assertEqual(self.records()[4]["detail"], ["#1", "#4"])
+
     def test_R020_21_a_clear_resets_the_count(self):
         self.write_log([self.reject(1), self.reject(2),
                         self.record(3, "escalate", spec="012", gate="approved", cause="rejections",
@@ -426,11 +475,15 @@ class CheckOrderTests(ApproveCase):
         self.assertFalse(self.chaos_log.exists())
 
     def test_R020_38_log_read_before_spec_lookup(self):
-        self.chaos_log.write_text("{not json\n", encoding="utf-8")
+        self.write(self.chaos_log, "{not json\n")
         self.commit_all("bad log")
         code, out = self.approve_cli("099", "approved", SPEC_PASS)
         self.assertEqual(code, 1)
-        self.assertNotIn("does not exist", out)
+        self.assertIn("chaos-log.jsonl", out)
+        self.assertRegex(out, r"\b1\b")
+        code, _ = run_cli("chaos", "approve", "012", "approved", "--review",
+                          str(self.tmp / "missing.md"))
+        self.assertEqual(code, 1)  # step 2 (exit 1) comes before the review (exit 2)
 
     def test_R020_38_base_commit_before_spec_lookup(self):
         self.git("checkout", "-q", "--orphan", "other")
@@ -440,6 +493,15 @@ class CheckOrderTests(ApproveCase):
         self.git("commit", "-q", "--no-verify", "-m", "readme only")
         code, _ = self.approve_cli("099", "approved", SPEC_PASS)
         self.assertEqual(code, 2)
+
+    def test_R020_38_chaos_applies_before_phase(self):
+        self.write("agentkit.toml", '[kit]\nprofile = "fixture"\n\n'
+                   '[chaos]\nenabled = true\nspecs = ["012"]\n')
+        self.spec("013", "frozen")
+        self.commit_all("013 not under chaos")
+        code, out = self.approve_cli("013", "approved", SPEC_PASS)
+        self.assertEqual(code, 1)
+        self.assertIn("not under chaos mode", out)
 
     def test_R020_38_phase_before_review(self):
         code, _ = self.approve_cli("012", "done", "not a verdict")

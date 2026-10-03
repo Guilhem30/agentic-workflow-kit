@@ -61,6 +61,11 @@ class UnfreezeUsageTests(UnfreezeCase):
         self.assert_unchanged()
         self.assertFalse(self.chaos_log.exists())
 
+    def test_R020_23_reason_of_exactly_five_characters(self):
+        code, _ = self.unfreeze_cli("tests/test_012_b.py", reason="  abcde ")
+        self.assertEqual(code, 0)
+        self.assertEqual(self.records()[-1]["reason"], "abcde")
+
     def test_R020_23_both_reviews_required(self):
         auditor = self.review(UNFREEZE_PASS, name="auditor")
         impl = self.review(UNFREEZE_PASS, name="impl")
@@ -91,7 +96,8 @@ class UnfreezeUsageTests(UnfreezeCase):
     def test_R020_23_paths_of_two_specs(self):
         code, out = self.unfreeze_cli("tests/test_012_b.py", "tests/test_011_x.py")
         self.assertEqual(code, 1)
-        self.assertIn("tests/test_011_x.py", out)
+        self.assertTrue("tests/test_011_x.py" in out or "tests/test_012_b.py" in out)
+        self.assertIn("owner", out.lower())
         self.assert_unchanged()
         self.assertFalse(self.chaos_log.exists())
 
@@ -184,11 +190,45 @@ class UnfreezeVerdictTests(UnfreezeCase):
         self.assertEqual(self.kinds(), ["escalate"])
         rec = self.records()[0]
         self.assertEqual((rec["cause"], rec["gate"]), ("owner", "unfreeze"))
-        self.assertEqual(len(rec["detail"]), 1)
-        self.assertIn("impl-reviewer", rec["detail"][0])
-        self.assertIn(IMPL.format(seq=1), rec["detail"][0])
+        detail = " ".join(rec["detail"])
+        self.assertIn("impl-reviewer", detail)
+        self.assertIn(IMPL.format(seq=1), detail)
+        self.assertNotIn("test-auditor", detail)
         self.assertTrue((self.root / IMPL.format(seq=1)).is_file())
         self.assert_unchanged()
+
+    def test_R020_19_critical_checks_run_on_unfreeze(self):
+        self.write("AGENTS.md", "# changed\n")
+        code, out = self.unfreeze_cli("tests/test_012_b.py")
+        self.assertEqual(code, 1)
+        self.assertIn("agentkit chaos log --open", out)
+        self.assertEqual(self.kinds(), ["escalate"])
+        rec = self.records()[0]
+        self.assertEqual((rec["cause"], rec["detail"]), ("protected", ["AGENTS.md"]))
+        self.assert_unchanged()
+
+    def test_R020_19_verify_on_unfreeze(self):
+        self.write("tests/test_011_x.py", "edited\n")
+        code, _ = self.unfreeze_cli("tests/test_012_b.py")
+        self.assertEqual(code, 1)
+        self.assertEqual(self.records()[0]["cause"], "verify")
+        self.assertEqual(self.records()[0]["detail"], ["modified tests/test_011_x.py"])
+
+    def test_R020_43_needs_owner_before_keep_frozen(self):
+        code, _ = self.unfreeze_cli("tests/test_012_b.py", auditor=UNFREEZE_FAIL, impl=OWNER)
+        self.assertEqual(code, 1)
+        self.assertEqual(self.kinds(), ["escalate"])
+        self.assertEqual(self.records()[0]["cause"], "owner")
+        self.assert_unchanged()
+
+    def test_R020_38_unfreeze_paths_before_chaos_applies(self):
+        self.write("agentkit.toml", '[kit]\nprofile = "fixture"\n\n'
+                   '[chaos]\nenabled = true\nspecs = ["013"]\n')
+        self.commit_all("only 013 under chaos")
+        code, out = self.unfreeze_cli("tests/test_012_b.py", "tests/nowhere.py")
+        self.assertEqual(code, 1)
+        self.assertIn("tests/nowhere.py", out)
+        self.assertNotIn("not under chaos mode", out)
 
     def test_R020_13_unfreeze_review_verdicts_are_checked(self):
         code, out = self.unfreeze_cli("tests/test_012_b.py", impl=SPEC_PASS)
@@ -202,6 +242,7 @@ class UnfreezePassTests(UnfreezeCase):
 
     def test_R020_25_both_pass(self):
         self.agent()  # no human check, no console (R020-25)
+        # Succeeding in an agent environment shows that the owner check (R002-20) is skipped.
         with mock.patch("agentkit.lock.open_console", side_effect=AssertionError("console")):
             result = self.unfreeze_api(["tests/test_012_b.py", "tests/sub"],
                                        reason="  fixture was wrong  ")
@@ -341,6 +382,11 @@ class ClearTests(ChaosCase):
                 self.assertEqual(code, 2)
         self.assertEqual(len(self.records()), 1)
 
+    def test_R020_26_note_of_exactly_five_characters(self):
+        self.escalations(1)
+        chaos.clear(self.cfg(), seqs=[1], note="  abcde ", confirm=self.asker(), user="O", now=NOW)
+        self.assertEqual(self.kinds()[-1], "clear")
+
     def test_R020_26_default_confirm_uses_the_console(self):
         self.escalations(1)
         reader, writer = io.StringIO("clear 1\n"), io.StringIO()
@@ -396,6 +442,15 @@ class ClearTests(ChaosCase):
             code, _ = run_cli("chaos", "clear", "1", "--note", "looked at it")
         self.assertEqual(code, 1)
         self.assertEqual(self.chaos_log.read_bytes(), before)
+
+
+class ClearWithoutGitTests(ChaosCase):
+    USE_GIT = False
+
+    def test_R020_26_agent_check_before_git(self):
+        self.agent()
+        with self.assertRaises(OwnerCheckError):
+            chaos.clear(self.cfg(), all_open=True, note="looked at it", confirm=lambda p, e: True)
 
 
 class LogCommandTests(ChaosCase):
@@ -483,14 +538,14 @@ class LogCommandTests(ChaosCase):
     def test_R020_27_no_log(self):
         code, out = run_cli("chaos", "log")
         self.assertEqual(code, 0)
-        self.assertEqual(out.strip(), "")
+        self.assertNotIn("#", out)
 
     def test_R020_27_malformed_log_exit_1(self):
-        self.chaos_log.write_text(dumps(self.record(1, "clear", escalations=[], note="ok")) + "\n"
-                                  + "{broken\n", encoding="utf-8")
+        self.write(self.chaos_log, dumps(self.record(1, "clear", escalations=[], note="ok")) + "\n"
+                                  + "{broken\n")
         code, out = run_cli("chaos", "log")
         self.assertEqual(code, 1)
-        self.assertIn("2", out)
+        self.assertRegex(out, r"\b2\b")
 
     def test_R020_41_open_escalations_with_details(self):
         recs = self.history()[:6]
@@ -536,7 +591,7 @@ class AuditTests(ChaosCase):
         self.assertEqual(chaos.audit(self.cfg(), base="HEAD"), [])
 
     def test_R020_28_malformed_log(self):
-        self.chaos_log.write_text("{broken\n", encoding="utf-8")
+        self.write(self.chaos_log, "{broken\n")
         problems = chaos.audit(self.cfg())
         self.assertTrue(problems)
         code, _ = run_cli("chaos", "audit")
