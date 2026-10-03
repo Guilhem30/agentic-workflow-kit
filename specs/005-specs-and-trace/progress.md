@@ -30,15 +30,9 @@
 - 2026-10-03 (UTC), phase `done` (chaos log #10)
 - Tests: all 005 tests pass (81). Full suite: only 020's status classes fail (16 errors on the
   006 stub). `trace`: 001, 002, 003, 005, 020 OK. `lock verify` and `chaos audit` OK.
-- **Owner questions (open):**
-  1. R005-11's own text contains the literal `[manual]`, so it counts as excluded (a trace
-     warning). Proposed: "markers inside backticks do not count".
-  2. R005-19/R005-20: the code takes the scoped reading. `trace --spec`, `spec-status` and
-     `new-spec` refuse only a duplicated number they handle. Plain `trace` reports every
-     duplicate and every bad `depends`. The literal reading (any duplicate blocks everything)
-     is untested either way.
-  3. R005-18 "terminal": `spec-status` refuses every change to a dropped spec. 002's
-     owner-only `lock freeze --spec --force` can still freeze one; add a guard in 002?
+- **Owner questions:** all settled 2026-10-03. Q1: markers in backticks ignored, spec 022
+  (R022-02). Q2: scoped reading kept, R005-19 reworded. Q3: forced freeze of a dropped spec
+  refused, spec 022 (R022-03).
 - Known LOW gaps: titles with `Cf` characters (ZWJ emoji, soft hyphen) are refused; a quoted
   title loses its quotes; a lone `\r` in hand-edited front matter is read two ways; the
   duplicate-number check exists in three places.

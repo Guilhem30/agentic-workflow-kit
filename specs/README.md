@@ -31,6 +31,7 @@ not make. Approve or reject them explicitly.
 | 019 | [self-hosting-and-docs](019-self-hosting-and-docs/spec.md): README, adapter matrix, the kit installs itself | all | Principle 4, Verification |
 | 020 | [chaos-mode](020-chaos-mode/spec.md): opt-in agent-approved gates, escalation on critical problems | 001, 002, 003, 005, 006 | Owner's idea, 2026-10-03 (not in plan.md) |
 | 021 | [chaos-autopilot](021-chaos-autopilot/spec.md): `/autopilot NNN` runs a spec to done in chaos mode | 001, 002, 005, 006, 007, 011, 020 | Owner's idea, 2026-10-03 (not in plan.md) |
+| 022 | [owner-decisions](022-owner-decisions/spec.md): `.git/config` deny, markers in backticks, dropped-spec force freeze, deleted chaos log | 002, 003, 005, 020 | Owner's decisions on open questions, 2026-10-03 |
 
 Suggested order: 000 and 001 first, then 002, 003 and 005 (the core), then 004, 006, 007, 008
 and 009, then 010 and 011, then the adapters, 017, 018 and finally 019.
@@ -44,5 +45,5 @@ test.
 
 Chaos mode (020) is on: agents pass gates with `agentkit chaos approve` and reviewer verdicts;
 see `specs/020-chaos-mode/progress.md` for the per-spec cycle. Done: 001, 002, 003, 005. Frozen: 020
-(status parts wait for 006). Next: 004. Open owner questions: `specs/003-guard/progress.md`
-and `specs/005-specs-and-trace/progress.md`.
+(status parts wait for 006). Next: 004, then 022 (draft, small), then the order in `docs/priorities.md`. No open owner
+questions (all settled 2026-10-03).

@@ -31,7 +31,6 @@ tests-approved --review FILE`; `agentkit chaos approve NNN frozen`; /implement N
 impl-reviewer review to a file; `agentkit chaos approve NNN done --review FILE`; commit per
 gate, /handoff, push. On an escalation stop and tell the owner (`agentkit chaos log --open`);
 never run `chaos clear`. Expected escalations: 011/012/019 touch AGENTS.md, CLAUDE.md or roles/.
-Open spec questions for the owner: R020-25 says unfreeze "shall not call human_check()", but
-R020-08 uses it for `actor` (proposed wording: "shall not refuse on human_check()"); R002-33
-deleted-log gap (see 002).
+Owner questions settled 2026-10-03: R020-25 reworded ("shall not refuse because of
+`human_check()`"); the R002-33 deleted-log gap goes to spec 022 (R022-04).
 <!-- agentkit:snapshot:end -->

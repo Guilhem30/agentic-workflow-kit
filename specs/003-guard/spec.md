@@ -57,7 +57,11 @@ commands.
   `--assume-unchanged` or `--skip-worktree`, shall be denied.
 - **R003-16** The command shall be split into segments at `;`, `&&`, `||`, `|`, `&`, newlines and
   parentheses. Leading `VAR=value` assignments and the prefix words `sudo`, `env`, `command`,
-  `builtin`, `exec`, `nohup`, `time` and `xargs` shall be skipped.
+  `builtin`, `exec`, `nohup`, `time` and `xargs` shall be skipped. The guard may also skip shell
+  keywords (`if then else elif do while until ! { }`), `function`, `coproc`, `timeout` and
+  `nice`, analyse the script of `bash -c`, `sh -c`, `eval`, `cmd /c`, `su -c` and `env -S`, and
+  treat a copy or move into an existing directory as a write to the file inside it. These
+  extras only add denials (owner's decision, 2026-10-03).
 - **R003-17** A `cd DIR`, `pushd DIR` or `Set-Location DIR` segment shall change the working
   directory used to resolve later segments. `popd` restores the previous one. Every write
   argument is resolved against the tracked directory and compared, as a repo-relative path, with
@@ -175,6 +179,9 @@ run. These are caught by end-of-turn verify and pre-commit.
 - Degraded mode R003-27 to R003-31 (owner's decision: fail-closed for test files only).
 - The chaos log, the stored reviews and `chaos clear` in R003-09, R003-13, R003-21 and R003-27
   (020 amendment, approved by the owner on 2026-10-03).
+- R003-13 is applied literally, after quotes and backslashes are removed: a `grep` or commit
+  message that mentions both `agentkit` and `lock unfreeze` is denied too. The owner kept this
+  over-blocking on purpose (2026-10-03): it is safe, and rare in practice.
 
 ## Open questions
 

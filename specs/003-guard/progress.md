@@ -22,16 +22,9 @@
 - 2026-10-03 (UTC), phase `done` (chaos log #7)
 - Tests: all 003 tests pass; 020's guard classes pass. Full suite: only 020's status classes
   fail (16 errors on the 006 stub).
-- **Owner questions (open):**
-  1. ~~R003-30/31 vs 004~~ settled 2026-10-03: the owner chose to amend 004 (R004-02 warns on
-     stderr, new R004-22: a degraded allow exits 1). `Decision` gained `degraded: bool = False`.
-  2. R003-13 is applied literally (quotes and backslashes removed), so a grep or commit message
-     containing "agentkit" and "lock unfreeze" is denied. Narrow the requirement?
-  3. Beyond R003-16's lists the guard also skips shell keywords (`if then else elif do while
-     until ! { }`), `function`, `coproc`, `timeout`, `nice`, and analyses `bash -c`, `eval`,
-     `cmd /c`, `su -c`, `env -S` scripts, plus copy-into-directory semantics. Keep or amend?
-  4. `.git/config` is writable (it can set core.hooksPath). Add to R003-09 or `[guard]
-     deny_globs`?
+- **Owner questions:** all settled 2026-10-03. Q1: 004 amended. Q2: R003-13 stays literal
+  (noted in Additions). Q3: R003-16 now lists the extras. Q4: `.git/config` denied, in spec 022
+  (R022-01).
 - Known LOW gaps (out of scope per spec): variables (`"$1"`), symlinks, here-strings, `$''`
   quoting, trailing cmd switches read as destination (`xcopy a b /compress`).
 

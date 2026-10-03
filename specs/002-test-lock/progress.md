@@ -20,7 +20,5 @@
 - Tasks: 12/13 done. Open: drop the interim `Edit(tests/**)` ask rule once the guard hooks exist (003, 004, 012)
 - Tests: `tests/test_002_*.py` all pass; `lock verify`, `lock audit` OK
 
-**Next:** none for 002. Open spec question for the owner: R002-33 does not audit a chaos log that
-existed at REF and was deleted (`lock audit` passes, `chaos audit` reports it); amending it needs
-`audit()` to also run when the log exists at REF.
+**Next:** none for 002. R002-33 deleted-log gap: owner decided 2026-10-03 to close it, in spec 022 (R022-04).
 <!-- agentkit:snapshot:end -->

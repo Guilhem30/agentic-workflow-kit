@@ -27,7 +27,9 @@ Test names start with their requirement ID.
   `tests-draft`; from a later phase it exits 1, saying the owner must unfreeze first. A dropped
   spec keeps its folder and number. `trace` (without `--spec`) and `status` skip it.
 - **R005-19** If two folders under `<specs>` share a number, then `trace`, `new-spec` and
-  `spec-status` shall exit 1, naming both folders.
+  `spec-status` shall exit 1, naming both folders. The check is scoped: `trace --spec NNN`,
+  `spec-status NNN` and `new-spec` refuse only a duplicate of a number they handle; plain
+  `trace` reports every duplicate (owner's decision, 2026-10-03).
 - **R005-20** The front matter may hold `depends`, a list of spec numbers (absent means none).
   `trace` shall exit 1 when an entry names no existing spec, names the spec itself, or forms a
   cycle, naming the spec and the entry.

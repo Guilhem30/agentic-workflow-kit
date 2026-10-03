@@ -17,6 +17,7 @@ The order is ranked by what pays back on every later spec, then by plan.md depen
 | # | Spec | Why now | Savings |
 |---|---|---|---|
 | 1 | **004** hook-dialects | Already in flight. Unblocks 012–016. | Reuse `hook_fixtures.py` for every adapter's conformance tests |
+| 1b | **022** owner decisions | Small (4 requirements). Turns the owner's answers C, D, F and G into tests and code. | None |
 | 2 | **006** status/handoff | Closes 020 (`chaos approve 020 done`). A ≤ 10-line `status` replaces reading the README, progress.md and the chaos log at session start. | High: every session |
 | 3 | **007** test runner | `agentkit test` prints the summary and failures only (60-line cap). Every implement loop and review pass runs the suite. | High: every test run |
 | 4 | **009** lint-instructions | Enforces the ~3k-token startup budget. Catches growth in AGENTS.md, skills and progress.md. | Medium, ongoing |
@@ -52,8 +53,8 @@ layer the chaos gates lean on.
    cold-start re-read per phase.
 5. **Prune progress.md at handoff.** Keep the snapshot block and the open owner questions. Move the
    history to git (the commits already hold it). 003 and 005 are at 39–49 lines and growing.
-6. **Batch owner questions.** The open questions (003 Q1 done; 005 Q1–3; R020-25 wording; R002-33
-   gap) should be answered in one sitting. Each one otherwise costs a stop, a resume and a re-read.
+6. **Batch owner questions.** Answer open questions in one sitting; each one otherwise costs a
+   stop, a resume and a re-read. (Done 2026-10-03: A–H settled, the behaviour changes are in 022.)
 7. **Quiet test output until 007 lands.** Run
    `python3 -m unittest discover -s tests 2>&1 | tail -3`, and with failures,
    `grep -E '^(ERROR|FAIL):'`. Never read the full traceback dump into the main context. Hand
@@ -78,6 +79,6 @@ layer the chaos gates lean on.
 ## Suggested next steps
 
 1. Finish 004 in its own session (the uncommitted work belongs to it).
-2. Owner: answer the batched questions (item 6), and approve process items 1–5 so they go into
-   `.agents/skills/` and `roles/` (followed by `bootstrap_sync.py`).
-3. Run 006, then 007, applying the reduced review loop.
+2. Done 2026-10-03: owner approved process items 1–5 and 7 (now in `.agents/skills/` and `roles/`) and
+   the recommended answers A–H.
+3. Run 022, then 006, then 007, applying the reduced review loop.

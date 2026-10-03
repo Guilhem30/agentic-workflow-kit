@@ -190,7 +190,8 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
   ```
 
   The `unfreeze` record is appended last, after the lock, status and unfreeze log were written.
-  It exits 0. It shall not call `human_check()` or open the console.
+  It exits 0. It shall not refuse because of `human_check()` (R020-08 still uses it for the
+  actor) and shall not open the console. (Wording settled by the owner, 2026-10-03.)
 
 ### Owner commands
 - **R020-26** `agentkit chaos clear (SEQ... | --all) --note TEXT` shall check, in this order:
