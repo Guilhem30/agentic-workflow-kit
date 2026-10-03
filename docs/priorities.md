@@ -76,6 +76,19 @@ layer the chaos gates lean on.
 13. **Allowlist read-only commands** (`/fewer-permission-prompts`). This saves round-trips more
     than tokens, but stops sessions stalling on `tests/**` asks during the chaos cycle.
 
+## Applied directly (2026-10-03)
+
+- Items 1–5 and 7: skills and roles (cheaper, shorter review loop; leaner handoff); progress.md
+  files of 001, 002, 003, 005 and 020 cut to their snapshots.
+- Item 10 and part of 11: AGENTS.md uses the real `agentkit` commands (`trace --spec`, quiet
+  test runs) instead of the bootstrap equivalents.
+- Part of 8: a bootstrap SessionStart hook (`scripts/session_start.py`) prints the resume point
+  until 006 and 012 wire `agentkit status`.
+- Part of 12: the applied amendments of 020 and 021 moved to ADR 0002's appendix.
+- Item 13: read-only commands are allowed in `.claude/settings.json`, which also denies
+  editing `.git/config` (decision C) until 022 lands.
+- Still waiting on specs: item 9 (output filter, 007/012), the rest of 8 and 11 (006, 012, 018).
+
 ## Suggested next steps
 
 1. Finish 004 in its own session (the uncommitted work belongs to it).
