@@ -9,6 +9,10 @@ profile = "generic"
 adapters = ["claude-code"]
 self_hosted = true
 
+[chaos]
+enabled = true
+
+
 [ci]
 providers = ["github"]
 os = ["linux", "windows", "macos"]
