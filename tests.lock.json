@@ -10,6 +10,10 @@
       "sha256": "3033054ce6fa93c248410580341b96eb16464917387131ea0cba431a79617258",
       "spec": "003"
     },
+    "tests/spec_fixtures.py": {
+      "sha256": "251779d3d41dde23c3ba78f0ba8079db0e2832f0f484bae172c178340aab3f03",
+      "spec": "005"
+    },
     "tests/support.py": {
       "sha256": "c466b2a27082d505eb82099c4cebb7e35c47aa854247d1fc16beb6514f9427ca",
       "spec": "002"
@@ -60,6 +64,26 @@
     "tests/test_003_shell.py": {
       "sha256": "50052490062cecd74bdb9ce8e66ea108f745373664e8646e38eb6ba927fe360e",
       "spec": "003"
+    },
+    "tests/test_005_folders.py": {
+      "sha256": "f275d2511a5cec73215b6bc4e5c8e0982e2fd67012dda0efdfc0bb590624a56a",
+      "spec": "005"
+    },
+    "tests/test_005_new_spec.py": {
+      "sha256": "4220359efcd0f6f0157d126333b0d7872e74995e91782c1dc6662e9249b5bd25",
+      "spec": "005"
+    },
+    "tests/test_005_reqids.py": {
+      "sha256": "d351c034bd821fdb8626c75c24413b9fc4883d4b6ddc7b2911cbd0ca07ede085",
+      "spec": "005"
+    },
+    "tests/test_005_status.py": {
+      "sha256": "82b379f5beedb8c05d7ee3635a1433076329ffbb8b884af9c8e2542867b85180",
+      "spec": "005"
+    },
+    "tests/test_005_trace.py": {
+      "sha256": "90ed58347976d323a9e028230bc92b3d5344fb9c580b7a1d89e80589e4e346a6",
+      "spec": "005"
     },
     "tests/test_020_approve.py": {
       "sha256": "5c536925fc5685e9f4577a751fc0bf308dc59f8bd01ccfbe301987cc12f13f4b",

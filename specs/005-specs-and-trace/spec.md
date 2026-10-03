@@ -1,7 +1,7 @@
 ---
 id: "005"
 title: Spec folders, phases, requirement IDs and traceability
-status: tests-approved
+status: frozen
 depends: ["001"]
 ---
 
