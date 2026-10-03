@@ -1,0 +1,53 @@
+# Project instructions
+
+<!-- Project-specific sections go outside the agentkit block. Keep this file under 150 lines
+     (checked by `agentkit lint-instructions`). Link to docs instead of pasting them here. -->
+
+## Product
+
+TODO: two or three sentences on what this project is.
+
+## Layout
+
+TODO: module map and dependency rules (or link to docs/architecture.md). See docs/CODEMAP.md.
+
+## Conventions
+
+TODO
+
+<!-- agentkit:begin (managed by agentkit; edit outside this block) -->
+## Workflow (agentkit)
+
+Every feature goes spec -> tests -> freeze -> implement. Details, only when a phase is unclear:
+`.agentkit/workflow/WORKFLOW.md`. Run tools as `{{python}} .agentkit/bin/agentkit <command>`.
+
+**Session start:** if no hook already printed it, run `status` (10 lines max). Work on one spec phase per session.
+
+### Hard rules
+1. Files listed in `{{lock}}` are frozen. Never edit, move, delete or regenerate them, with any tool
+   or shell command. If a frozen test looks wrong, stop and tell the human. Only they unfreeze.
+2. Never edit `{{lock}}`, `{{unfreeze_log}}`, `agentkit.toml` or `.agentkit/`. Never run
+   `git commit --no-verify`, never change `core.hooksPath`, never run `lock unfreeze`.
+3. The human owns the gates: spec approval, test approval and `/freeze`. Set a spec to `approved`
+   or `tests-approved` only when the human said so in this conversation.
+4. Make frozen tests pass honestly: no special-casing test inputs, no skipped or weakened checks.
+5. Test names start with requirement IDs (`{{req_id_example}}`), and `trace` must pass.
+
+### Commands
+| Need | Command |
+|---|---|
+| Where are we, what next | `status` |
+| Run tests, compact output (never read raw build logs) | `test`, or `test <scope>` |
+| Start a spec folder | `new-spec NNN slug` |
+| Change phase | `spec-status NNN approved` (also `tests-draft`, `tests-approved`, `done`) |
+| Requirement coverage | `trace` or `trace --spec NNN` |
+| Save progress before ending a session | `handoff NNN --next "..."` |
+| Undo an accidental change to a frozen file | `lock restore` |
+
+### Token discipline
+- Read `{{codemap}}` and the spec's API contract before exploring. Open only the files you need.
+- While implementing, run targeted tests. Run the full `test` before committing.
+- Send verbose work (log digging, wide searches) to a fast-tier subagent if your tool has them.
+  Do trivial steps yourself.
+- Conventional commits: `spec(NNN): ...`, `test(NNN): ...`, `feat(NNN): ...`, `fix: ...`, `chore: ...`.
+<!-- agentkit:end -->

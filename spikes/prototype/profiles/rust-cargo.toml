@@ -1,0 +1,28 @@
+# Rust with cargo-nextest. Enable JUnit output in .config/nextest.toml:
+#   [profile.default.junit]
+#   path = "junit.xml"
+# Keep tests in tests/ or in separate `tests.rs` files (`#[cfg(test)] mod tests;`) so they
+# can be frozen without freezing the code they test.
+name = "rust-cargo"
+description = "Rust with cargo-nextest (JUnit output)"
+
+test_cmd = "cargo nextest run --no-fail-fast"
+test_one_cmd = "cargo nextest run --no-fail-fast {scope}"
+junit_report_glob = ["target/nextest/**/*.xml"]
+
+frozen_globs = ["tests/**", "**/tests/**", "**/tests.rs", "**/testdata/**"]
+test_globs = ["tests/**/*.rs", "**/tests/**/*.rs", "**/tests.rs"]
+source_globs = ["src/**/*.rs", "crates/**/src/**/*.rs"]
+build_output_globs = ["**/target/**"]
+# Rust fn names are snake_case: r004_07_rejects_empty_title
+req_id_regex = '(?i)(?<![a-z0-9])R(\d{3})[-_](\d{2,3})(?![0-9])'
+format_cmd = "cargo fmt"
+lint_cmd = "cargo clippy -- -D warnings"
+
+ci_setup = """
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@nextest
+"""
+
+[codemap]
+symbol_regexes = ['(?m)^pub\s+(?:async\s+)?(?:fn|struct|enum|trait|type|mod|const)\s+(?P<name>\w+)']

@@ -1,0 +1,15 @@
+# Language-neutral fallback: set test_cmd and globs in agentkit.toml under [profile].
+name = "generic"
+description = "Any language; configure [profile] in agentkit.toml"
+
+test_cmd = ""
+junit_report_glob = ["**/test-results/**/*.xml", "**/junit*.xml"]
+frozen_globs = ["tests/**", "test/**", "spec/**", "**/testdata/**", "**/fixtures/**"]
+test_globs = ["tests/**", "test/**", "spec/**"]
+source_globs = ["src/**"]
+build_output_globs = ["**/build/**", "**/dist/**", "**/target/**", "**/node_modules/**", "**/__pycache__/**"]
+req_id_regex = '(?<![A-Za-z0-9])R(\d{3})[-_](\d{2,3})(?![0-9])'
+ci_setup = ""
+
+[codemap]
+symbol_regexes = []

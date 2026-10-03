@@ -1,0 +1,25 @@
+# .NET with the JunitXml.TestLogger package referenced by the test projects.
+name = "dotnet"
+description = ".NET (xUnit/NUnit/MSTest) with JunitXml.TestLogger"
+
+test_cmd = 'dotnet test --nologo --verbosity quiet --logger "junit;LogFilePath=build/test-results/{assembly}.xml"'
+# scope = --filter expression, e.g. FullyQualifiedName~R004
+test_one_cmd = 'dotnet test --nologo --verbosity quiet --logger "junit;LogFilePath=build/test-results/{assembly}.xml" --filter {scope}'
+junit_report_glob = ["**/build/test-results/*.xml"]
+
+frozen_globs = ["tests/**", "**/*.Tests/**", "**/*.UnitTests/**", "**/*.IntegrationTests/**"]
+test_globs = ["tests/**/*.cs", "**/*.Tests/**/*.cs", "**/*.UnitTests/**/*.cs", "**/*.IntegrationTests/**/*.cs"]
+source_globs = ["src/**/*.cs"]
+build_output_globs = ["**/bin/**", "**/obj/**", "**/build/**"]
+req_id_regex = '(?<![A-Za-z0-9])R(\d{3})[-_](\d{2,3})(?![0-9])'
+format_cmd = "dotnet format"
+lint_cmd = "dotnet format --verify-no-changes"
+
+ci_setup = """
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+"""
+
+[codemap]
+symbol_regexes = ['(?m)^\s*public\s+(?:(?:static|sealed|abstract|partial|readonly|record)\s+)*(?:class|interface|struct|enum|record)\s+(?P<name>\w+)']
