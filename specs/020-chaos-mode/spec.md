@@ -114,16 +114,18 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
 
 ### Order of checks
 - **R020-38** `chaos approve` and `chaos unfreeze` shall check in this order, stopping at the
-  first failure; steps 1 to 5 write nothing:
+  first failure; steps 1 to 7 write nothing:
   1. exit 2: the `[chaos]` table (R020-02, R020-03), chaos off (R020-04), arguments (R020-15,
-     R020-23), git and base commit (R020-06);
-  2. exit 1: the log reads (R020-37), the spec exists, chaos applies (R020-05), the phase
-     (R020-16, R020-39), the paths (R020-23);
-  3. exit 2: the review (R020-13);
-  4. exit 1: not paused (R020-18);
-  5. exit 1: trace, for `tests-approved` only (R020-17);
-  6. the critical checks (R020-19);
-  7. the verdict (R020-20 to R020-22, R020-24, R020-25).
+     R020-23), git (R020-06);
+  2. exit 1: the log reads (R020-37);
+  3. exit 2: a base commit exists (R020-06);
+  4. exit 1: for `unfreeze`, the paths (R020-23); then the spec exists, chaos applies (R020-05),
+     the phase (R020-16, R020-39);
+  5. exit 2: the review (R020-13);
+  6. exit 1: not paused (R020-18);
+  7. exit 1: trace, for `tests-approved` only (R020-17);
+  8. the critical checks (R020-19);
+  9. the verdict (R020-20 to R020-22, R020-24, R020-25).
 
 ### Gates
 - **R020-15** `agentkit chaos approve NNN GATE [--review FILE]` shall accept the gates
@@ -139,7 +141,8 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
 - **R020-19** The critical checks shall run in this order. On the first failure the command shall
   append an `escalate` record with that cause and detail, change nothing else, print what is
   blocked and why with the hint `owner: agentkit chaos log --open`, and exit 1:
-  - `base`: the base commit no longer exists in the repository (detail: its hash);
+  - `base`: the base commit does not exist or is not an ancestor of HEAD
+    (`git merge-base --is-ancestor`) (detail: its hash);
   - `verify`: `lock.verify(cfg)` reports a violation (detail: `<kind> <path>` per violation);
   - `audit`: `lock.audit(cfg, base=<base commit>)` reports a problem (detail: the problems);
   - `protected`: a path changed since the base commit matches `escalate_globs` (detail: the
@@ -167,8 +170,7 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
 - **R020-24** When the unfreeze verdict fails, R020-20 and R020-21 shall apply with gate
   `unfreeze`.
 - **R020-25** When the unfreeze verdict passes, the command shall remove the paths from the
-  lock, set the spec's status to `tests-draft`, append the `unfreeze` record, and append to the
-  unfreeze log (creating it with `LOG_HEADER`, R002-25) these lines, exactly:
+  lock, set the spec's status to `tests-draft`, and append to the unfreeze log (creating it with `LOG_HEADER`, R002-25) these lines, exactly:
 
   ```text
   <empty line>
@@ -178,11 +180,12 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
   - <path>            (one line per file, sorted by path)
   ```
 
+  The `unfreeze` record is appended last, after the lock, status and unfreeze log were written.
   It exits 0. It shall not call `human_check()` or open the console.
 
 ### Owner commands
 - **R020-26** `agentkit chaos clear (SEQ... | --all) --note TEXT` shall check, in this order:
-  agent environment (raise `OwnerCheckError`, exit 2); exactly one of SEQs or `--all` (exit 2);
+  agent environment (raise `OwnerCheckError`, exit 2); git (R020-06, exit 2); exactly one of SEQs or `--all` (exit 2);
   a note of at least 5 characters after stripping (exit 2); the SEQs (R020-40); then ask on the
   console for the exact answer `clear <N>`, N being the number of escalations, as R002-21. When
   confirmed it appends one `clear` record listing them, sorted, and exits 0. It works whether
@@ -203,7 +206,8 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
   R020-37, when a cited review file is missing or its hash differs, or when the log at REF
   (default `HEAD`) is not a line prefix of the current log. A log missing at REF counts as empty.
   When REF does not exist or the root is not a git repository, only the prefix check is skipped.
-  `--staged` reads the log and the review files from the git index. No log at all passes.
+  `--staged` reads the log and the review files from the git index. No log at REF and none now
+  passes.
 
 ### Guard
 - **R020-29** The guard shall deny a write (by any route R003 classifies as a write) to the chaos
@@ -212,13 +216,15 @@ The `/autopilot` skill is 021. This spec is the CLI and the checks.
 - **R020-30** A shell command containing `agentkit` and the consecutive tokens `chaos clear`
   shall be denied, with a reason saying that only the owner clears escalations.
 - **R020-42** If the `[chaos]` table is malformed, then the guard shall protect the default log
-  path and the reviews (R020-29) instead of failing.
+  path and the reviews (R020-29) instead of failing. `chaos log`, `chaos audit` and `lock audit`
+  then use the default log path.
 
 ### Gate commands in an agent environment
 - **R020-31** While chaos applies to spec NNN, `agentkit spec-status NNN approved|tests-approved|done`
   and `agentkit lock freeze --spec NNN` run in an agent environment shall exit 1, change nothing,
-  and point to `agentkit chaos approve NNN <gate>`. A malformed `[chaos]` table makes them exit 2.
-  The APIs (`specs.set_status`, `lock.freeze`) do not check this.
+  and point to `agentkit chaos approve NNN <gate>`. In an agent environment only, a malformed
+  `[chaos]` table makes these gate moves exit 2. Other moves, and every move outside an agent
+  environment, are unchanged. The APIs (`specs.set_status`, `lock.freeze`) do not check this.
 
 ### Status
 - **R020-32** When a `[chaos]` table exists, line 1 of `status` shall end with ` | chaos: on`
@@ -262,7 +268,8 @@ agentkit/chaos.py:
   def unfreeze(cfg, paths, reason, review, user=None, now=None) -> dict   # same convention
   def clear(cfg, seqs=None, note="", all_open=False, confirm=None, user=None, now=None) -> dict
       # confirm(prompt, expected) -> bool; default = prompt through lock.open_console()
-  def format_log(records: list[dict], open_only=False) -> list[str]   # R020-27, R020-41
+  def format_log(records: list[dict], open_only=False) -> list[str]
+      # R020-27, R020-41; includes the `no open escalation` line
   def audit(cfg, base="HEAD", staged=False) -> list[str]   # problems
   def status_suffix(cfg) -> str   # R020-32, with the leading " | "; "" when unchanged
 CLI: agentkit chaos {approve,unfreeze,clear,log,audit}
@@ -296,12 +303,16 @@ Independent cases:
 | `chaos unfreeze tests/test_012_x.py tests/support.py …` | exit 1: `tests/support.py` has no spec; ask the owner |
 | `chaos unfreeze tests/test_000_x.py …` | exit 1: spec 000 is not under chaos mode |
 | `chaos clear 3 --note x` typed into Claude Code's Bash tool | denied by the guard (R020-30) |
-| the branch was rebased and the newest record's commit is gone | `escalate` (`base`) |
+| the branch was rebased, so the newest record's commit is not an ancestor of HEAD | `escalate` (`base`) |
 
 - Uncommitted protected changes still count after a `clear` (the base becomes the clear record's
   commit). The owner commits or reverts them before clearing.
 - Rejections of `approved` and of `tests-approved` count separately; an `approve` of a gate
   resets that gate's count, and an `unfreeze` resets the `unfreeze` count.
+- An owner's committed edit of `agentkit.toml` after the newest record escalates as `protected`
+  at the next agent step; the owner clears it, which moves the base past the edit.
+- `{roles}/**` covers the neutral role sources only. Edits of derived copies (`.claude/agents/`)
+  are caught by `sync --check` at pre-commit (010, 018).
 - With chaos off, `chaos log` and `chaos audit` still work on an existing log, and the guard still
   protects it.
 
@@ -327,7 +338,7 @@ Independent cases:
   agents where chaos applies (R020-31).
 - **003**: R003-09 lists the chaos log and reviews (R020-29, R020-42); R003-13 lists
   `chaos clear` (R020-30); R003-21 (inline scripts) and R003-27 (degraded mode) also cover the
-  chaos log.
+  chaos log and the reviews.
 - **005**: R005-06 notes the agent refusal of R020-31; the Open questions decision gains the
   chaos exception.
 - **006**: R006-02, R006-03 and R006-06 refer to R020-32 to R020-34.
