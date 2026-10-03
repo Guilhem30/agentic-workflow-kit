@@ -1,5 +1,5 @@
 """Command-line entry point (spec 000). Dispatches `models` (001), `lock ...` (002),
-`new-spec`, `spec-status` and `trace` (005), `test` (007), `chaos ...` (020) and `autopilot` (021)."""
+`new-spec`, `spec-status` and `trace` (005), `status` and `handoff` (006), `test` (007), `codemap` (008), `lint-instructions` (009), `chaos ...` (020) and `autopilot` (021)."""
 from __future__ import annotations
 
 import argparse
@@ -212,6 +212,28 @@ def cmd_trace(args) -> int:
     return code
 
 
+def cmd_status(args) -> int:
+    from agentkit import status
+    for line in status.status_lines(load_config()):
+        print(line)
+    return 0
+
+
+def cmd_handoff(args) -> int:
+    from agentkit import handoff
+    return handoff._cli(load_config(), args)
+
+
+def cmd_codemap(args) -> int:
+    from agentkit import codemap
+    return codemap._cli(load_config(), args.check)
+
+
+def cmd_lint_instructions(args) -> int:
+    from agentkit import lint_instructions
+    return lint_instructions._cli(load_config())
+
+
 def cmd_test(args) -> int:
     from agentkit import runtests
     code, lines = runtests.run_tests(load_config(), args.scope)
@@ -278,6 +300,22 @@ def build_parser() -> argparse.ArgumentParser:
     tr = sub.add_parser("trace", help="requirement traceability (005)")
     tr.add_argument("--spec")
     tr.set_defaults(func=cmd_trace)
+
+    st = sub.add_parser("status", help="short session summary (006)")
+    st.set_defaults(func=cmd_status)
+
+    ho = sub.add_parser("handoff", help="write the resume snapshot to progress.md (006)")
+    ho.add_argument("id")
+    ho.add_argument("--note", default="")
+    ho.add_argument("--next", dest="next_step", default="")
+    ho.set_defaults(func=cmd_handoff)
+
+    cm = sub.add_parser("codemap", help="write docs/CODEMAP.md (008)")
+    cm.add_argument("--check", action="store_true")
+    cm.set_defaults(func=cmd_codemap)
+
+    li = sub.add_parser("lint-instructions", help="check instruction token budgets (009)")
+    li.set_defaults(func=cmd_lint_instructions)
 
     te = sub.add_parser("test", help="run the tests, print a compact summary (007)")
     te.add_argument("scope", nargs="?")
