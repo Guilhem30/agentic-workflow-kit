@@ -34,7 +34,8 @@ not make. Approve or reject them explicitly.
 
 Suggested order: 000 and 001 first, then 002, 003 and 005 (the core), then 004, 006, 007, 008
 and 009, then 010 and 011, then the adapters, 017, 018 and finally 019.
-020 (chaos mode, approved 2026-10-03, ADR 0002) and 021 (reserved, phase `draft`) come after the specs they depend on.
+020 (chaos mode, approved 2026-10-03, ADR 0002; amendments applied) and 021 (written, phase `draft`,
+awaiting the owner) come after the specs they depend on.
 
 Requirement IDs are `RNNN-MM`. Requirements marked `[manual]` are checked by a human, not by a
 test.
