@@ -13,14 +13,14 @@
 - 2026-10-03: owner approved the tests (`tests/test_002_*.py` and `tests/support.py`); spec moved to `tests-approved`.
 - 2026-10-03: implemented; impl-reviewer approved after two passes; committed `feat(001,002)`.
 - 2026-10-03: owner froze the 001/002 tests and `tests/support.py`; `tests/test_002_chaos.py` added (draft).
+- 2026-10-03: R002-33/34 implemented with 020 (`_chaos_audit`, the R002-34 refusal); impl-reviewer approved; `chaos approve 002 done` (chaos log #4).
 
 <!-- agentkit:snapshot:begin -->
-- 2026-10-03 (UTC), phase `frozen`
-- Tasks: 11/13 done. First open: Chaos amendment (R002-33, R002-34)
-- Tests: 001/002 frozen by the owner (8 files incl. `tests/support.py`); `lock verify` OK.
-  `tests/test_002_chaos.py` (R002-33/34) is written, not yet approved or frozen.
-- Branch `claude/eager-pasteur-cr0p8s`
+- 2026-10-03 (UTC), phase `done` (chaos log #4)
+- Tasks: 12/13 done. Open: drop the interim `Edit(tests/**)` ask rule once the guard hooks exist (003, 004, 012)
+- Tests: `tests/test_002_*.py` all pass; `lock verify`, `lock audit` OK
 
-**Next:** owner reviews `tests/test_002_chaos.py` with 020's tests, then freezes it by path;
-implement R002-33/34 with `/implement 020`.
+**Next:** none for 002. Open spec question for the owner: R002-33 does not audit a chaos log that
+existed at REF and was deleted (`lock audit` passes, `chaos audit` reports it); amending it needs
+`audit()` to also run when the log exists at REF.
 <!-- agentkit:snapshot:end -->

@@ -15,13 +15,23 @@
   contradicted R020-08), second pass `verdict: ready to freeze`. Spec moved to `tests-draft`.
   Red state: stubs raise NotImplementedError; R020-31 and R002-33/34 fail on exit codes.
 - 2026-10-03: owner enabled `[chaos]` (ed186c8) and delegated this gate ("in chaos mode you shouldn't need me to approve freeze"). As the one bootstrap exception, the agent set `tests-approved` and ran `lock freeze --spec 020` (6 files). Every later gate goes through `chaos approve`.
+- 2026-10-03: implemented (`chaos.py`, lock R002-33 hook, CLI refusals). First agent unfreeze (chaos log #1) fixed `test_R020_28_valid_log_passes`, whose fixture rebuilt the committed log; re-audited and re-frozen through `chaos approve` (#2, #3). impl-reviewer: two passes, all findings fixed except two spec questions for the owner.
 
 <!-- agentkit:snapshot:begin -->
-- 2026-10-03 (UTC), phase `tests-draft`
-- Tests: 020 errors only on stubs; trace 020 42/42, trace 002 34/34
-- Branch `claude/eager-pasteur-cr0p8s`
+- 2026-10-03 (UTC), phase `frozen` (chaos log #3); chaos mode is ON in agentkit.toml
+- Tasks: 11/14 done. Open: guard rules (with 003), status line (with 006, which also cuts line 1 to 200), WORKFLOW.md section (with 011)
+- Tests: all 020 tests pass except tests/test_020_guard_status.py (32 errors on the 003/006 stubs)
+- Chaos log: #1 unfreeze, #2 tests-approved, #3 frozen (020); #4 done (002). `chaos audit` OK
 
-**Next:** owner reviews the 020 tests and `tests/test_002_chaos.py`; on approval, set
-`tests-approved` and the owner runs `lock freeze --spec 020` and
-`lock freeze tests/test_002_chaos.py tests/chaos_fixtures.py`.
+**Next (new session):** spec 003 under chaos mode, then 005, 004, 006 (020 then goes `done`
+through `chaos approve 020 done`), 007, 008, 009, 010, 011, 012, 013, 014, 015, 016, 017, 018,
+019. Every spec is already `approved`. Per spec: /write-tests NNN; test-auditor review saved to
+a file outside the repo (last line `verdict: ready to freeze`); `agentkit chaos approve NNN
+tests-approved --review FILE`; `agentkit chaos approve NNN frozen`; /implement NNN;
+impl-reviewer review to a file; `agentkit chaos approve NNN done --review FILE`; commit per
+gate, /handoff, push. On an escalation stop and tell the owner (`agentkit chaos log --open`);
+never run `chaos clear`. Expected escalations: 011/012/019 touch AGENTS.md, CLAUDE.md or roles/.
+Open spec questions for the owner: R020-25 says unfreeze "shall not call human_check()", but
+R020-08 uses it for `actor` (proposed wording: "shall not refuse on human_check()"); R002-33
+deleted-log gap (see 002).
 <!-- agentkit:snapshot:end -->

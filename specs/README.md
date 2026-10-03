@@ -39,3 +39,9 @@ amendments applied) come after the specs they depend on.
 
 Requirement IDs are `RNNN-MM`. Requirements marked `[manual]` are checked by a human, not by a
 test.
+
+## Resume point (2026-10-03)
+
+Chaos mode (020) is on: agents pass gates with `agentkit chaos approve` and reviewer verdicts;
+see `specs/020-chaos-mode/progress.md` for the per-spec cycle. Done: 001, 002. Frozen: 020
+(guard/status parts wait for 003 and 006). Next: 003.
