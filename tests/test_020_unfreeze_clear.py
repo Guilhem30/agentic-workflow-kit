@@ -580,10 +580,10 @@ class AuditTests(ChaosCase):
         self.assertEqual(code, 0)
 
     def test_R020_28_valid_log_passes(self):
-        self.logged()
+        recs = self.logged()
         self.commit_all("log")
         self.assertEqual(chaos.audit(self.cfg()), [])
-        self.write_log(self.logged() + [self.record(3, "clear", escalations=[], note="later")])
+        self.write_log(recs + [self.record(3, "clear", escalations=[], note="later")])
         self.assertEqual(chaos.audit(self.cfg()), [])  # appended since HEAD
 
     def test_R020_28_log_missing_at_ref_counts_as_empty(self):

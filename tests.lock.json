@@ -56,10 +56,6 @@
     "tests/test_020_log_verdict.py": {
       "sha256": "514ed628531ae9dea72b2cd4326fdfe3164f8fc937445c41ba1e5e59160330ca",
       "spec": "020"
-    },
-    "tests/test_020_unfreeze_clear.py": {
-      "sha256": "7f0dab48665fada9bbdf4c1f2b8b93e4eebdd85917e63414d9387b1887410500",
-      "spec": "020"
     }
   }
 }

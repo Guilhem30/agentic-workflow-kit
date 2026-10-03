@@ -1,7 +1,7 @@
 ---
 id: "020"
 title: Chaos mode: agent-approved gates
-status: frozen
+status: tests-draft
 depends: ["001", "002", "003", "005", "006"]
 ---
 
