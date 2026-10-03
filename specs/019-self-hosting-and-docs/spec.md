@@ -43,7 +43,8 @@ adapter can and cannot enforce.
 - **R019-08** `python -m unittest discover -s tests` shall pass in the kit repo.
 - **R019-09** install, update and `sync --check` shall be tested against temporary fixture
   repositories for at least two profiles and all five adapters.
-- **R019-10** The guard demo of R012-12 shall be run once in nothingnotif and then cleaned up. [manual]
+- **R019-10** The guard demo of R012-12 shall be run once in a throwaway fixture repository
+  installed with the `claude-code` adapter, which is then deleted. [manual]
 
 ## Public API contract
 
@@ -52,6 +53,8 @@ None beyond the earlier specs.
 ## Additions beyond plan.bkp
 
 - The `--self` install flag and the `python-unittest` profile for the kit.
+- R019-10 runs the guard demo in a throwaway fixture repository (owner's decision, 2026-10-03:
+  the kit has no other user project).
 
 ## Open questions
 

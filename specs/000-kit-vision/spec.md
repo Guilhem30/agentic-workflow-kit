@@ -15,7 +15,7 @@ kit packages one process that works with any language, any LLM and any agent too
 **spec → tests → (human) freeze → implement until the frozen tests pass.**
 
 Tests never change without the human's agreement. Token usage stays low without hurting code
-quality or speed much. The first real user is `nothingnotif` (Kotlin/Android, Claude Code).
+quality or speed much. The first real user is the kit itself (019).
 
 ## Personas
 
@@ -88,8 +88,8 @@ Commands and their specs: `install`, `update`, `sync` (010); `lock …` (002); `
 ## Scope (v1)
 
 All of the specs in `specs/README.md`. Adapters: Claude Code, Codex CLI, OpenCode, DeepSeek
-Harness and Pi. Profiles: kotlin-gradle (full), python-pytest, node-ts, go, rust-cargo, dotnet
-and generic (presets).
+Harness and Pi. Profiles: python-unittest (used by the kit itself), python-pytest, node-ts, go,
+rust-cargo, dotnet, kotlin-gradle and generic (presets).
 
 ## Out of scope
 

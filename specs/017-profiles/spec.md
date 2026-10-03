@@ -8,9 +8,8 @@ status: approved
 
 ## Context
 
-Profiles hold everything language-specific (001). `kotlin-gradle` is complete because
-nothingnotif uses it. The others are small presets, each covered by a smoke test on a tiny
-fixture repository. Smoke tests do not run the language toolchain.
+Profiles hold everything language-specific (001). Each profile is a small preset, covered by
+a smoke test on a tiny fixture repository. Smoke tests do not run the language toolchain.
 
 ## Requirements (EARS)
 

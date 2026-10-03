@@ -337,7 +337,7 @@ def cmd_commit_msg(a) -> int:
     if CONVENTIONAL_RX.match(first) or AUTO_MSG_RX.match(first):
         return 0
     _out([f"commit message is not a conventional commit: '{first[:80]}'",
-          "expected e.g. `feat(001): add LED mask`, `test(001): freeze model tests`, `chore: bootstrap`"])
+          "expected e.g. `feat(001): add config loader`, `test(001): freeze model tests`, `chore: bootstrap`"])
     return 1
 
 
