@@ -1,7 +1,7 @@
 ---
 id: "009"
 title: Instruction linter (token budgets)
-status: frozen
+status: done
 depends: ["001"]
 ---
 
