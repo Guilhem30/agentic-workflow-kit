@@ -16,7 +16,7 @@ adapter can and cannot enforce.
 
 ### Self-hosting
 - **R019-01** The kit repo shall be installed with
-  `python -m agentkit install --target . --self --profile python-unittest --adapters claude-code --ci github --ci-os linux,windows,macos`.
+  `python -m agentkit install --target . --self --profile python-unittest --adapters claude-code --ci github --ci-os linux,windows,macos --models kit`.
   With `--self`, the package is used from the repo root and not copied into `.agentkit/` (R010-06).
 - **R019-02** The kit repo shall contain its own `AGENTS.md` (project sections plus the agentkit
   block), `CLAUDE.md`, `tests.lock.json` and `tests.unfreeze-log.md`.
@@ -53,6 +53,9 @@ None beyond the earlier specs.
 ## Additions beyond plan.md
 
 - The `--self` install flag and the `python-unittest` profile for the kit.
+- `--models kit` in R019-01: R010-25 makes `--models` mandatory on a first install (owner's
+  decision, 2026-10-03). Until 019, the kit repo's instruction files are hand-written
+  (`docs/adr/0001-bootstrap-instance.md`); R019-01 replaces them.
 - R019-10 runs the guard demo in a throwaway fixture repository (owner's decision, 2026-10-03:
   the kit has no other user project).
 
