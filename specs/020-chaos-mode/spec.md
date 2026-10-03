@@ -1,7 +1,7 @@
 ---
 id: "020"
 title: Chaos mode: agent-approved gates
-status: draft
+status: approved
 depends: ["001", "002", "003", "005", "006"]
 ---
 
@@ -341,11 +341,11 @@ Independent cases:
 - The `/autopilot` skill (021).
 - Changes to approved specs: listed below for the owner to apply.
 
-## Amendments needed in other specs (owner's decision, pending)
+## Amendments needed in other specs (approved by the owner, 2026-10-03; not yet applied)
 
 - **000**: principle 5 and R000-10 gain "except in chaos mode, which only the owner enables
   (020)"; the glossary's Owner and Gate say the same; the command list gains `chaos` (020). A
-  principle changes only with an ADR, so this needs ADR 0002.
+  principle changes only with an ADR: ADR 0002 (accepted 2026-10-03).
 - **001**: R001-05 lists `[chaos]` (read by 020).
 - **002**: R002-20 and R002-21 note that `chaos unfreeze` (R020-25) bypasses them by design;
   R002-24 notes the `chaos agent` entry; `lock audit` (R002-27, R002-28) also runs `chaos.audit`
@@ -398,4 +398,4 @@ None. Decided by the owner on 2026-10-03:
    reviewer then escalates with `verdict: needs owner` (R020-43).
 3. Any edit of `AGENTS.md` or `CLAUDE.md` escalates (R020-01 default `escalate_globs`).
 4. `done` needs no mechanical check beyond the critical checks; the impl-reviewer runs the tests.
-5. ADR 0002 records the principle 5 change; it is written once this spec is approved.
+5. ADR 0002 records the principle 5 change (`docs/adr/0002-chaos-mode.md`).

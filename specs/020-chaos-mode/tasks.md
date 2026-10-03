@@ -1,6 +1,7 @@
 # 020 chaos-mode: tasks
 
-- [ ] Owner applies the amendments to 000, 002, 003, 005, 006 and 011; ADR 0002 accepted
+- [x] ADR 0002 accepted
+- [ ] Apply the approved amendments to 000, 001, 002, 003, 005, 006, 010, 011, 012, 014, 018
 - [ ] `chaos.py`: `Settings`, `settings()` with validation (R020-01 to R020-06)
 - [ ] Log: `read_log`, append, `open_escalations`, record fields (R020-07 to R020-11)
 - [ ] `REVIEWS`, `parse_verdict`, review copy and hash (R020-12 to R020-14)
