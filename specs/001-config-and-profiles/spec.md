@@ -18,32 +18,40 @@ provider be used, including local models.
 - **R001-01** When a command starts, agentkit shall use the directory named by the environment
   variable `AGENTKIT_ROOT` as the repository root if it contains `agentkit.toml`.
 - **R001-02** Otherwise, agentkit shall search for `agentkit.toml` from the current directory
-  upward and use the first directory that contains one as the root.
+  upward and use the first directory that contains one as the root. `find_root(start)` applies
+  R001-01, then R001-02 from `start` (default: the current directory). `load_config(root=X)`
+  skips both and uses X.
 - **R001-03** If no `agentkit.toml` is found, then the command (other than `install` and
   `version`) shall exit 2 with a message suggesting `agentkit install`.
 - **R001-04** If `agentkit.toml` is not valid TOML, then the command shall exit 2 and name the
-  file and the parser's line/column.
+  file and the parser's position as `line L, column C`.
 
 ### Settings
 - **R001-05** agentkit shall read these tables from `agentkit.toml`: `[kit]` (`version`,
   `profile`, `adapters`, `python`, `self_hosted`), `[ci]` (R001-20), `[paths]`, `[models]`,
-  `[models.<adapter>]`, `[budgets]`, `[guard]`, `[profile]`.
+  `[models.<adapter>]`, `[budgets]`, `[guard]`, `[profile]`. Absent keys default to
+  `version = ""`, `adapters = []`, `self_hosted = false`; absent `[budgets]`, `[guard]` and
+  `[profile]` are empty tables.
 - **R001-06** Where a `[paths]` key is absent, agentkit shall use these defaults:
   `specs = "specs"`, `lock = "tests.lock.json"`, `unfreeze_log = "tests.unfreeze-log.md"`,
-  `codemap = "docs/CODEMAP.md"`, `skills = ".agents/skills"`, `roles = "roles"`.
+  `codemap = "docs/CODEMAP.md"`, `skills = ".agents/skills"`, `roles = "roles"`. The state
+  directory is always `<root>/.agentkit/state` (not configurable; used by 003 and 007).
 - **R001-20** agentkit shall read a `[ci]` table:
   - `providers`: a list of `github` and/or `gitlab`; an empty list means no CI;
   - `os`: a list of `linux`, `windows` and/or `macos`;
   - `gitlab_tags`: an optional map from OS to GitLab runner tag.
 
-  A value outside these sets shall make the command exit 2, naming the key.
+  A value outside these sets shall make the command exit 2, naming the dotted key (`ci.providers`,
+  `ci.os` or `ci.gitlab_tags`). An absent `[ci]` table means `providers = []` and `os = []`.
 - **R001-07** Where `[kit] python` is absent, the interpreter command shall be `python` on
   Windows and `python3` elsewhere.
 
 ### Profiles
 - **R001-08** agentkit shall load the profile named by `[kit] profile` (default `generic`) from
   the first directory that has `<name>.toml`, in this order: `<root>/.agentkit/profiles`,
-  `<root>/profiles`, then the kit's own `profiles/`.
+  `<root>/profiles`, then the kit's own `profiles/` (`<kit_source>/profiles`, where `kit_source`
+  is the directory that contains the `agentkit` package). The kit ships `profiles/generic.toml`
+  from 001 on; it may be empty, since R001-10 supplies the defaults (017 refines it).
 - **R001-09** If the profile is not found, then the command shall exit 2 and list the directories
   it searched.
 - **R001-10** A profile shall support these keys, with these defaults when absent:
@@ -51,12 +59,13 @@ provider be used, including local models.
   `junit_report_glob` ([]), `frozen_globs` (["tests/**", "test/**"]), `test_globs`
   (default: same as `frozen_globs`), `source_globs` ([]), `build_output_globs`
   (["**/build/**", "**/dist/**", "**/node_modules/**", "**/__pycache__/**"]), `req_id_regex`
-  (see R001-13), `output_filter_regex`, `format_cmd`, `lint_cmd`, `ci_setup` (""),
-  `codemap.symbol_regexes` ([]).
+  (see R001-13), `output_filter_regex` (""), `format_cmd` (""), `lint_cmd` (""), `ci_setup` (""),
+  `codemap.symbol_regexes` ([]). `load_profile` returns the profile file's table as written;
+  `Config.profile` is the defaults, overlaid by the profile, overlaid by `[profile]` (R001-11).
 - **R001-11** Values in `agentkit.toml`'s `[profile]` table shall override the profile's values.
   Nested tables (such as `codemap`) shall be merged one level deep.
-- **R001-12** If `req_id_regex` does not have at least two capture groups, then the command
-  shall exit 2 naming the key.
+- **R001-12** If `req_id_regex` does not compile, or does not have at least two capture groups,
+  then the command shall exit 2 naming the key.
 - **R001-13** The default `req_id_regex` shall match `R004-07`, `R004_07` and `test_R004_07_x`.
   It shall not match `XR004-07` or `R004-0712`. Group 1 is the spec number and group 2 is the
   requirement number.
@@ -101,29 +110,36 @@ Nobody types model names. At install, the owner picks one of two modes with `--m
   - `codex`: the current OpenAI model names for each tier, verified against the Codex docs when
     013 is implemented and recorded with the date in `adapters/README.md`;
   - `opencode`, `pi` and `deepseek-harness`: none, because they work with any provider and the
-    kit cannot know which one the owner uses (tool mode always).
-- **R001-19** The chosen mode shall be stored as `[models] mode = "tool" | "kit"`.
+    kit cannot know which one the owner uses (no built-in map).
+- **R001-19** The chosen mode shall be stored as `[models] mode = "tool" | "kit"`. An absent mode
+  means `tool`. Any other value shall make the command exit 2, naming `models.mode`.
 - **R001-21** The install help text, and the message when `--models` is missing (R010-25), shall
-  summarise the two modes in at most 8 lines, with `kit` marked as recommended.
-- **R001-22** `agentkit models` shall print, for each configured adapter, the mode, and for each
-  tier the model and effort that will be written (or "decided by the tool"). `status` shall not
-  print models, so this costs nothing per session.
+  print `config.MODELS_HELP` verbatim: a summary of the two modes in at most 8 lines, in which
+  the line describing `kit` contains the word "recommended".
+- **R001-22** `agentkit models` shall print, for each configured adapter, a line
+  `<adapter>: mode <mode>`, then one line per tier: `  <tier>: <model> (effort <effort>)`, or
+  `  <tier>: decided by the tool` when the tier resolves to nothing. It exits 0. `status` shall
+  not print models, so this costs nothing per session.
 - **R001-23** Where an owner really wants a specific model, an optional `[models.<adapter>]`
-  table with `strong` / `standard` / `fast` shall override the built-in map in `kit` mode. It is
-  never required, and install never asks for it.
+  table with `strong` / `standard` / `fast` shall override the built-in map in `kit` mode,
+  including for adapters without a built-in map (tiers it does not name resolve to nothing).
+  It is ignored in `tool` mode. It is never required, and install never asks for it.
 
 ## Public API contract
 
 ```text
 agentkit/config.py:
   CONFIG_NAME = "agentkit.toml"
-  class ConfigError(Exception)
+  TIERS = ("strong", "standard", "fast")
+  TIER_EFFORT = {"strong": "high", "standard": "medium", "fast": "low"}
+  MODELS_HELP: str   # R001-21
+  class ConfigError(Exception)   # the CLI maps it to exit 2
   @dataclass class Config:
       root: Path; data: dict; profile: dict; kit_source: Path
       def path(key: str) -> str
       lock_rel, unfreeze_log_rel: str; lock_path, unfreeze_log_path, specs_dir, state_dir: Path
       adapters: list[str]; python_cmd: str; self_hosted: bool
-      def models(adapter: str | None = None) -> dict[str, str]
+      def models(adapter: str) -> dict[str, str]   # {tier: model}; unresolved tiers omitted
       budgets: dict; guard: dict; frozen_globs: list[str]; test_globs: list[str]
   def find_root(start: Path | None = None) -> Path | None
   CLI: agentkit models   # R001-22
@@ -162,6 +178,12 @@ Validating every profile key's type beyond R001-12. Unknown keys are ignored.
 - Case-insensitive globs (R001-15).
 - The `[ci]` table (R001-20), following the owner's decision that each project chooses its CI
   environments.
+- Clarifications made while writing the tests (owner's decision, 2026-10-03): `find_root` and
+  `AGENTKIT_ROOT`; the `line L, column C` format; defaults for `[kit]`, `[ci]` and the three
+  previously unspecified profile keys; raw `load_profile` vs merged `Config.profile`;
+  `state_dir`; `kit_source` and `profiles/generic.toml` shipped from 001; regexes that do not
+  compile; dotted CI keys; absent mode = `tool`; `[models.<adapter>]` also for adapters without a
+  map; `TIERS`, `TIER_EFFORT`, `MODELS_HELP`; the `agentkit models` output format.
 
 ## Open questions
 

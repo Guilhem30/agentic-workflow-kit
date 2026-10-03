@@ -105,13 +105,18 @@ The lock cannot protect the kit's tests before the lock exists. So the order for
 
 1. The owner approves the specs.
 2. Tests for 001 and 002 are written and the owner approves them.
-3. The minimal lock (002) is implemented.
+3. The minimal lock (002) is implemented, together with the part of 005 that it needs: reading
+   and setting a spec's status (`specs.PHASES`, `find_spec`, `set_status`).
 4. Those tests and every later approved test are frozen by the owner with the kit's own `lock freeze`.
+   Shared test helpers that contain no requirement ID (for example `tests/support.py`) belong to
+   no spec, so the owner freezes them by path.
 
 ## Additions beyond plan.bkp
 
 - R000-08 (exit code convention), R000-09 and R000-10 make implicit plan intentions explicit.
 - The bootstrap order above replaces the plan's "tests written together with the code" exception.
+- Bootstrap steps 3 and 4 gained the 005 status functions and freezing shared helpers by path
+  (owner's decision, 2026-10-03, after writing the 001/002 tests).
 
 ## Open questions
 

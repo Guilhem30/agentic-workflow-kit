@@ -11,7 +11,7 @@ not make. Approve or reject them explicitly.
 |---|---|---|---|
 | 000 | [kit-vision](000-kit-vision/spec.md): constitution, scope, glossary, roadmap | none | Context, Part A principles |
 | 001 | [config-and-profiles](001-config-and-profiles/spec.md): `agentkit.toml`, profile loading, globs, model tiers | 000 | Part A Profiles, model tiers |
-| 002 | [test-lock](002-test-lock/spec.md): freeze, verify, status, unfreeze, log | 001 | `lock` commands |
+| 002 | [test-lock](002-test-lock/spec.md): freeze, verify, status, unfreeze, log | 001, 005 (spec status only) | `lock` commands |
 | 003 | [guard](003-guard/spec.md): neutral actions and allow/ask/deny decisions | 001, 002 | `guard`, enforcement layers |
 | 004 | [hook-dialects](004-hook-dialects/spec.md): per-tool payload parsing and responses, end-of-turn verify | 003, 006 | `payloads/`, conformance tests |
 | 005 | [specs-and-trace](005-specs-and-trace/spec.md): spec folders, phases, requirement IDs, `trace` | 001 | `trace`, per-feature cycle |
