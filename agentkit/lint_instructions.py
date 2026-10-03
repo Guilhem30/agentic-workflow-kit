@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import re
-import sys
 from dataclasses import dataclass, field
 
-DEFAULT_BUDGETS = {  # R009-02
+from agentkit.config import ConfigError
+
+_DEFAULT_BUDGETS = {  # R009-02
     "agents_md_lines": 150,
     "claude_md_lines": 40,
     "rule_md_lines": 80,
@@ -40,13 +41,33 @@ def _split_front_matter(text: str) -> tuple[dict, list[str]]:
     if lines and lines[0].strip() == "---":
         for i in range(1, len(lines)):
             if lines[i].strip() == "---":
-                meta = {}
-                for line in lines[1:i]:
-                    m = re.match(r"^([A-Za-z0-9_-]+):\s*(.*?)\s*$", line)
-                    if m:
-                        meta.setdefault(m.group(1), m.group(2).strip("'\""))
-                return meta, lines[i + 1:]
+                return _parse_meta(lines[1:i]), lines[i + 1:]
     return {}, lines
+
+
+def _unquote(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+        return value[1:-1]
+    return value
+
+
+def _parse_meta(lines: list[str]) -> dict:
+    """Top-level `key: value` pairs; `>` and `|` block scalars take their indented lines."""
+    meta, i = {}, 0
+    while i < len(lines):
+        m = re.match(r"^([A-Za-z0-9_-]+):\s*(.*?)\s*$", lines[i])
+        i += 1
+        if not m:
+            continue
+        key, value = m.group(1), m.group(2)
+        if value[:1] in (">", "|"):
+            block = []
+            while i < len(lines) and (not lines[i].strip() or lines[i][:1] in " \t"):
+                block.append(lines[i].strip())
+                i += 1
+            value = (" " if value[0] == ">" else "\n").join(b for b in block if b)
+        meta.setdefault(key, _unquote(value))
+    return meta
 
 
 def _line_count(text: str) -> int:
@@ -73,27 +94,30 @@ def _inputs(cfg) -> list[tuple[str, str, str]]:
     out = []
     for name, kind in (("AGENTS.md", "agents"), ("CLAUDE.md", "claude")):
         if (root / name).is_file():
-            out.append((kind, name, (root / name).read_bytes().decode("utf-8", "replace")))
+            out.append((kind, name, (root / name).read_bytes().decode("utf-8-sig", "replace")))
     rules = root / ".claude" / "rules"
     if rules.is_dir():
         for p in sorted(rules.rglob("*.md")):
             if p.is_file():
                 out.append(("rule", p.relative_to(root).as_posix(),
-                            p.read_bytes().decode("utf-8", "replace")))
+                            p.read_bytes().decode("utf-8-sig", "replace")))
     skills = root / cfg.path("skills")
     if skills.is_dir():
         for p in sorted(skills.glob("*/SKILL.md")):
             if p.is_file():
                 out.append(("skill", p.relative_to(root).as_posix(),
-                            p.read_bytes().decode("utf-8", "replace")))
+                            p.read_bytes().decode("utf-8-sig", "replace")))
     return out
 
 
 def _budgets(cfg) -> dict:
-    merged = dict(DEFAULT_BUDGETS)
+    merged = dict(_DEFAULT_BUDGETS)
     for key, value in cfg.budgets.items():
-        if key in merged and isinstance(value, int) and not isinstance(value, bool):
-            merged[key] = value
+        if key not in merged:
+            continue
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise ConfigError(f"budgets.{key}: must be a non-negative integer")
+        merged[key] = value
     return merged
 
 
@@ -174,5 +198,4 @@ def _cli(cfg) -> int:
         print(f"warning: {w}")
     state = "OK" if report.ok else "FAILED"
     print(f"lint-instructions: {state} (always-loaded instructions ~{report.always_loaded_tokens} tokens)")
-    sys.stdout.flush()
     return 0 if report.ok else 1  # R009-12
