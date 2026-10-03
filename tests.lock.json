@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "algorithm": "sha256-lf",
+  "files": {
+    "tests/support.py": {
+      "sha256": "c466b2a27082d505eb82099c4cebb7e35c47aa854247d1fc16beb6514f9427ca",
+      "spec": "002"
+    },
+    "tests/test_001_config.py": {
+      "sha256": "56dc6cd41def2d5f0b103cb2d7c8505c575ce3a02f437cc672272482027d8f8e",
+      "spec": "001"
+    },
+    "tests/test_001_globs.py": {
+      "sha256": "a69528f255fdba2c2c4e14ee8ed9333aa33f51238159e55bae9091f7ad7206ae",
+      "spec": "001"
+    },
+    "tests/test_001_models.py": {
+      "sha256": "57918d5d113beb6fc7e8720bc56c0a86ff982507e87be89a662dae6d41faaa3d",
+      "spec": "001"
+    },
+    "tests/test_002_freeze.py": {
+      "sha256": "7b6f07422ca18f988fd5949a977c57824c87dbc6bbb21ae53ec49210b2f24330",
+      "spec": "002"
+    },
+    "tests/test_002_restore_audit.py": {
+      "sha256": "dd3e91ce611d4c3d0622f4d3a2b62715619b78eed66fa79075f9f8b30e42a6a9",
+      "spec": "002"
+    },
+    "tests/test_002_unfreeze.py": {
+      "sha256": "925acd64bad0a71bcc75b25ebdd4dca40492fb0f167ace03d0ee103d37a92abd",
+      "spec": "002"
+    },
+    "tests/test_002_verify.py": {
+      "sha256": "d032b25dbb49233acec979c98c925cae2408bbc7ae74b0a4450e0c5d64c899a1",
+      "spec": "002"
+    }
+  }
+}
