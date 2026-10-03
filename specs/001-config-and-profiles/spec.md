@@ -1,7 +1,7 @@
 ---
 id: "001"
 title: Configuration, profiles, globs and model tiers
-status: frozen
+status: done
 depends: ["000"]
 ---
 

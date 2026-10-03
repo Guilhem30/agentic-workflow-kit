@@ -12,10 +12,10 @@
 - 2026-10-03: implemented; impl-reviewer approved after two passes; committed `feat(001,002)`.
 
 <!-- agentkit:snapshot:begin -->
-- 2026-10-03 (UTC), phase `tests-approved` (implemented per ADR 0001; `done` after the freeze)
-- Tasks: 9/9 done. First open: none
-- Tests: 001/002 `Ran 151 tests`, `OK`; full suite red only on 020 stubs
-- Branch `claude/eager-pasteur-cr0p8s`; implementation in `feat(001,002)`
+- 2026-10-03 (UTC), phase `done`
+- Tasks: 9/9 done
+- Tests: frozen by the owner (`test(001,002): freeze`); `lock verify` OK
+- Branch `claude/eager-pasteur-cr0p8s`
 
-**Next:** owner runs `python -m agentkit lock freeze --spec 001` in their own terminal (bootstrap freeze); status then becomes `frozen`.
+**Next:** none; 001 is done.
 <!-- agentkit:snapshot:end -->

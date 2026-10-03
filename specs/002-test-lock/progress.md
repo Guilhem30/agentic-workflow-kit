@@ -12,12 +12,15 @@
   during `/write-tests 020` and freeze them by path then.
 - 2026-10-03: owner approved the tests (`tests/test_002_*.py` and `tests/support.py`); spec moved to `tests-approved`.
 - 2026-10-03: implemented; impl-reviewer approved after two passes; committed `feat(001,002)`.
+- 2026-10-03: owner froze the 001/002 tests and `tests/support.py`; `tests/test_002_chaos.py` added (draft).
 
 <!-- agentkit:snapshot:begin -->
-- 2026-10-03 (UTC), phase `tests-approved` (implemented per ADR 0001; `done` after the freeze)
-- Tasks: 10/12 done. First open: Chaos amendment (R002-33, R002-34)
-- Tests: 001/002 `Ran 151 tests`, `OK`; full suite red only on 020 stubs
-- Branch `claude/eager-pasteur-cr0p8s`; implementation in `feat(001,002)`
+- 2026-10-03 (UTC), phase `frozen`
+- Tasks: 11/13 done. First open: Chaos amendment (R002-33, R002-34)
+- Tests: 001/002 frozen by the owner (8 files incl. `tests/support.py`); `lock verify` OK.
+  `tests/test_002_chaos.py` (R002-33/34) is written, not yet approved or frozen.
+- Branch `claude/eager-pasteur-cr0p8s`
 
-**Next:** owner runs `python -m agentkit lock freeze --spec 002` and `python -m agentkit lock freeze tests/support.py`; then drop the interim `Edit(tests/**)` ask rule. R002-33/34 follow 020.
+**Next:** owner reviews `tests/test_002_chaos.py` with 020's tests, then freezes it by path;
+implement R002-33/34 with `/implement 020`.
 <!-- agentkit:snapshot:end -->

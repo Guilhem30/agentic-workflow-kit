@@ -11,5 +11,6 @@
   `tests/test_002_chaos.py`, implemented after 020 (see progress)
 - [x] CLI `lock …` subcommands and exit codes
 - [x] Full suite; `impl-reviewer` review; `feat(002)` commit
-- [ ] Owner: bootstrap freeze of 001/002 tests and `tests/support.py`; drop the interim
-      `Edit(tests/**)` ask rule from `.claude/settings.json`
+- [x] Owner: bootstrap freeze of 001/002 tests and `tests/support.py`
+- [ ] Drop the interim `Edit(tests/**)` ask rule from `.claude/settings.json` once the guard
+      hooks (003, 004, 012) protect frozen tests; until then it is the only in-session block
