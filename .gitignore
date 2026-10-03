@@ -1,2 +1,8 @@
-__pycache__/
 *.pyc
+
+# agentkit:begin (managed by agentkit; edit outside this block)
+.agentkit/state/
+__pycache__/
+*.agentkit-new
+.claude/settings.local.json
+# agentkit:end (managed by agentkit; edit outside this block)

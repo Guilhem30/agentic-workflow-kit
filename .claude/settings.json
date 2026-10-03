@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "AGENTKIT_AGENT": "1"
+  },
+  "permissions": {
+    "deny": [
+      "Edit(**/tests.lock.json)",
+      "Edit(**/tests.unfreeze-log.md)",
+      "Edit(**/.agentkit/**)",
+      "Edit(**/agentkit.toml)",
+      "Bash(*lock unfreeze*)",
+      "Read(**/__pycache__/**)",
+      "Read(**/build/**)",
+      "Read(**/dist/**)"
+    ],
+    "ask": [
+      "Edit(.claude/settings.json)",
+      "Edit(.githooks/**)",
+      "Edit(.github/workflows/**)",
+      "Edit(.gitlab-ci.yml)",
+      "Edit(tests/**)"
+    ]
+  }
+}

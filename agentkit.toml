@@ -1,0 +1,36 @@
+# agentkit configuration for the kit itself (self-hosted). Hand-written during the bootstrap:
+# see docs/adr/0001-bootstrap-instance.md. Agents may not edit this file.
+
+[kit]
+version = "0.0.0"
+# Switch to "python-unittest" once spec 017 ships that profile. Until then, [profile] below
+# overrides the generic defaults.
+profile = "generic"
+adapters = ["claude-code"]
+python = "python3"
+self_hosted = true
+
+[ci]
+providers = ["github"]
+os = ["linux", "windows", "macos"]
+
+[paths]
+specs = "specs"
+lock = "tests.lock.json"
+unfreeze_log = "tests.unfreeze-log.md"
+codemap = "docs/CODEMAP.md"
+skills = ".agents/skills"
+roles = "roles"
+
+[models]
+mode = "kit"
+
+[profile]
+test_cmd = "python3 -m unittest discover -s tests -t ."
+test_cmd_windows = "python -m unittest discover -s tests -t ."
+test_one_cmd = "python3 -m unittest {scope}"
+test_one_cmd_windows = "python -m unittest {scope}"
+frozen_globs = ["tests/**"]
+test_globs = ["tests/**/*.py"]
+source_globs = ["agentkit/**/*.py"]
+build_output_globs = ["**/__pycache__/**", "**/build/**", "**/dist/**", "**/*.egg-info/**"]
