@@ -523,7 +523,10 @@ def _copy_args_posix(rest: list[str]) -> tuple[str | None, list[str], bool]:
 def _copy_args_cmd(name: str, rest: list[str]) -> tuple[str | None, list[str], bool]:
     """copy/move/xcopy/robocopy: /X[:v] switches anywhere; SRC then DEST; robocopy's later
     arguments are file names, which land in DEST."""
-    positional = [w for w in rest if not re.fullmatch(r"/[A-Za-z]{1,8}(?::.*)?|/[0-9-]+", w)]
+    # Switches: /y, /e, /exclude:x, upper-case robocopy words (/MIR, /MT:8). A lower-case
+    # word such as /evil is a path.
+    positional = [w for w in rest if not re.fullmatch(
+        r"/[A-Za-z]{1,3}(?::.*)?|/[A-Z]{4,10}(?::.*)?|/[a-z]+:.*|/[0-9-]+", w)]
     if len(positional) < 2:
         return None, positional, False
     if name == "robocopy":
@@ -846,7 +849,8 @@ class _Shell:
         """`cp SRC… DIR`, `cp -t DIR SRC…`, `Copy-Item SRC -Destination DIR`: the file that
         lands in DIR is a write too."""
         if name in _PS_WRITERS or any(
-                _ps_param(w.partition(":")[0], ("-destination", *_PS_SOURCE_PARAMS))
+                len(w.partition(":")[0]) >= 3  # not POSIX -d, -p, -l
+                and _ps_param(w.partition(":")[0], ("-destination", *_PS_SOURCE_PARAMS))
                 for w in rest if w.startswith("-")):  # `cp` and `copy` alias Copy-Item
             dest, sources, recursive = _copy_args_powershell(rest)
         elif name in ("xcopy", "robocopy", "copy", "move"):
