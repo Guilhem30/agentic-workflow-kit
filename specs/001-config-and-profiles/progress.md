@@ -9,12 +9,13 @@
   validated by 020 (R020-02), so 001 only passes the table through; `test_R001_05_reads_all_tables`
   does not cover `[chaos]` yet (owner may ask for one assertion).
 - 2026-10-03: owner approved the tests (`tests/test_001_*.py`); spec moved to `tests-approved`.
+- 2026-10-03: implemented; impl-reviewer approved after two passes; committed `feat(001,002)`.
 
 <!-- agentkit:snapshot:begin -->
-- 2026-10-03 (UTC), phase `tests-draft`
-- Tasks: 0/9 done. First open: Globs (R001-14 to R001-16)
-- Tests: `Ran 151 tests`, `FAILED (errors=186)` (expected red: stubs)
-- Branch `claude/eager-pasteur-cr0p8s`, 0 uncommitted files
+- 2026-10-03 (UTC), phase `tests-approved` (implemented per ADR 0001; `done` after the freeze)
+- Tasks: 9/9 done. First open: none
+- Tests: 001/002 `Ran 151 tests`, `OK`; full suite red only on 020 stubs
+- Branch `claude/eager-pasteur-cr0p8s`; implementation in `feat(001,002)`
 
-**Next:** owner reviews `tests/test_001_*.py` and says "tests for 001 approved"; then `/implement 001`.
+**Next:** owner runs `python -m agentkit lock freeze --spec 001` in their own terminal (bootstrap freeze); status then becomes `frozen`.
 <!-- agentkit:snapshot:end -->
