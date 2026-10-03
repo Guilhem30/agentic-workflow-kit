@@ -16,12 +16,18 @@ The spec must be `frozen` (during the bootstrap, 001 and 002 are implemented at
 2. Loop over the open tasks:
    - run the targeted test module;
    - change the code;
-   - re-run until it passes;
+   - re-run until it passes, reading only the last lines and the `ERROR:`/`FAIL:` names of
+     the output (hand long tracebacks to `summarizer`);
    - tick the task in `tasks.md`.
 3. If a test looks wrong, stop and explain it to the owner. Never touch it. If a frozen file
    changed by accident, restore it with `git checkout -- <path>`.
 4. When the targeted tests pass, run the full suite. Earlier specs must stay green.
 5. **Review.** Run the `impl-reviewer` role as a subagent (or apply `roles/impl-reviewer.md`
    inline). Fix its findings.
+   At most two passes: the first is a full review; the second gets only its findings and the
+   fix diff. A third pass needs a new blocking finding in the second.
 6. Commit `feat(NNN): <summary>`. When everything is green and reviewed, set `status: done`.
 7. If you stop before the end, run `/handoff NNN` first.
+
+Small specs (spec.md up to about 80 lines) in chaos mode may run tests, freeze and implement in
+one session with one handoff at the end.

@@ -10,8 +10,9 @@ effort: low
 
 Until `agentkit handoff` (spec 006) exists, update `specs/NNN-*/progress.md` by hand:
 
-1. Above the snapshot, add this session's decisions, dead ends and gotchas: at most five lines,
-   written for a reader with no context.
+1. Above the snapshot, keep only what the next session needs: open owner questions and live
+   gotchas, at most ten lines, written for a reader with no context. Drop settled history
+   (git and the chaos log keep it).
 2. Replace the block between `<!-- agentkit:snapshot:begin -->` and
    `<!-- agentkit:snapshot:end -->` with:
    - the UTC date and the phase;
