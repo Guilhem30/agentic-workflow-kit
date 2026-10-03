@@ -52,14 +52,23 @@ _DEFAULT_UNFREEZE_LOG = "tests.unfreeze-log.md"
 _DEFAULT_CHAOS_LOG = "chaos-log.jsonl"
 _DEFAULT_SPECS = "specs"
 
-_PREFIX_WORDS = {"sudo", "env", "command", "builtin", "exec", "nohup", "time", "xargs"}
+_PREFIX_WORDS = {"sudo", "env", "command", "builtin", "exec", "nohup", "time", "xargs",
+                 "nice", "timeout", "coproc"}
 # Shell keywords that start a segment without being the command (`if x; then rm y; fi`).
 _KEYWORDS = {"if", "then", "else", "elif", "do", "while", "until", "!", "{", "}"}
 # Options of prefix words that take a value (`sudo -u bob rm x`).
-_PREFIX_VALUE_OPTIONS = {"sudo": {"-u", "-g", "-C", "-h", "-p", "-r", "-t", "-U"},
-                         "env": {"-u", "-C", "-S", "--unset", "--chdir"},
-                         "xargs": {"-I", "-n", "-P", "-d", "-L", "-s", "-a", "-E", "-i"},
-                         "time": {"-f", "-o"}}
+_PREFIX_VALUE_OPTIONS = {"sudo": {"-u", "-g", "-C", "-h", "-p", "-r", "-t", "-U", "--user",
+                                  "--group", "--host", "--prompt", "--close-from"},
+                         "env": {"-u", "-C", "--unset", "--chdir"},
+                         "xargs": {"-I", "-n", "-P", "-d", "-L", "-s", "-a", "-E", "-i",
+                                   "--max-args", "--max-procs", "--delimiter", "--max-lines",
+                                   "--max-chars", "--arg-file", "--eof", "--replace"},
+                         "time": {"-f", "-o", "--format", "--output"},
+                         "exec": {"-a"},
+                         "nice": {"-n", "--adjustment"},
+                         "timeout": {"-s", "-k", "--signal", "--kill-after"}}
+# Launchers that take a leading non-option argument before the command (`timeout 10 rm x`).
+_PREFIX_WITH_ARGUMENT = {"timeout"}
 _ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 _OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "|&", ";;", "&;"}
 _PUNCT_RUN = re.compile(r"&>>|&>|>>|>\||>&|<<<|<<|<&|&&|\|\||\|&|;;|[;&|()<>]")
@@ -73,6 +82,8 @@ _PS_WRITERS = {"set-content", "add-content", "out-file", "remove-item", "move-it
                "new-item", "clear-content", "rename-item",
                "sc", "ac", "ri", "mi", "cpi", "ni", "rni", "clc"}
 _WRITERS = _POSIX_WRITERS | _CMD_WRITERS | _PS_WRITERS
+_COPIERS = {"cp", "mv", "install", "ln", "copy", "move", "xcopy", "copy-item", "cpi",
+            "move-item", "mi"}
 _DESTRUCTIVE = {"rm", "rmdir", "rd", "del", "erase", "remove-item", "ri", "mv", "move",
                 "move-item", "mi", "shred"}
 _GIT_PATH_COMMANDS = {"checkout", "restore", "rm", "mv", "apply", "am", "update-index"}
@@ -81,23 +92,64 @@ _GIT_VALUE_OPTIONS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--
 _INTERPRETERS = re.compile(r"^(python[0-9.]*|py|node|deno|bun|ruby|perl|php|pwsh|powershell|"
                            r"bash|sh|zsh)$")
 _SHELLS = {"bash", "sh", "zsh", "pwsh", "powershell"}
+# Interpreter options whose value is the next word (`python -W ignore -c …`).
+_VALUE_OPTIONS = {"python": {"-W", "-X", "--check-hash-based-pycs"},
+                  "node": {"-r", "--require", "--import", "-C", "--conditions", "--loader",
+                           "--input-type"},
+                  "ruby": {"-r", "-I", "-C", "-E", "-F"},
+                  "perl": {"-I", "-M", "-m", "-x", "-C"},
+                  "php": {"-d", "-c", "-z"},
+                  "shell": {"-o", "+o", "-O", "+O", "--rcfile", "--init-file"}}
+
+
+def _family(name: str) -> str:
+    if name.startswith("python") or name == "py":
+        return "python"
+    if name in ("node", "deno", "bun"):
+        return "node"
+    if name in ("pwsh", "powershell"):
+        return "pwsh"
+    if name in ("bash", "sh", "zsh"):
+        return "shell"
+    return name
+
+
+def _inline(name: str, word: str) -> tuple[str | None, bool] | None:
+    """When `word` starts an inline script for `name`: (script attached to the flag or None,
+    whether the script is every following word). None otherwise."""
+    family = _family(name)
+    low = word.lower()
+    if family == "python":
+        m = re.fullmatch(r"-[A-Za-z]*c(.*)", word, re.S)
+    elif family == "node":
+        if name == "deno" and word == "eval":
+            return None, True
+        if low in ("-e", "--eval", "-p", "--print"):
+            return None, False
+        m = re.fullmatch(r"(?:--eval|--print)=(.*)|-[ep](.+)", word, re.S)
+        if m:
+            return next(g for g in m.groups() if g is not None), False
+        return None
+    elif family in ("perl", "ruby"):
+        m = re.fullmatch(r"-[a-zA-Z]*[eE](.*)", word, re.S) if not word.startswith(
+            ("-I", "-M", "-C", "-r")) else None
+    elif family == "php":
+        m = re.fullmatch(r"-r(.*)", word, re.S)
+    elif family == "pwsh":
+        if low == "-c" or (len(low) >= 4 and "-command".startswith(low)) \
+                or low == "-commandwithargs":
+            return None, True
+        return None
+    else:  # POSIX shells: -c, alone or in a cluster such as -ec
+        if re.fullmatch(r"-[A-Za-z]*c[A-Za-z]*", word) and not word.startswith("--"):
+            return None, False
+        return None
+    if not m:
+        return None
+    return (m.group(1) or None), False
 _NESTING_LIMIT = 4
 
 
-def _inline_flag(name: str, word: str) -> bool:
-    """True when `word` makes the interpreter `name` run the next argument as a script."""
-    low = word.lower()
-    if name.startswith("python") or name == "py":
-        return bool(re.fullmatch(r"-[A-Za-z]*c", word))
-    if name in ("node", "deno", "bun"):
-        return low in ("-e", "--eval", "-p", "--print")
-    if name in ("perl", "ruby"):
-        return bool(re.fullmatch(r"-[a-z]*e", word))
-    if name == "php":
-        return low == "-r"
-    if name in ("pwsh", "powershell"):
-        return low in ("-c", "-command", "-commandwithargs")
-    return bool(re.fullmatch(r"-[A-Za-z]*c[A-Za-z]*", word)) and not word.startswith("--")
 _CD = {"cd", "pushd", "set-location", "chdir"}
 
 _RESTORE_HINT = "if it must change, ask the owner; to undo an edit run `agentkit lock restore`"
@@ -153,6 +205,10 @@ class _Root:
             except (OSError, ValueError):
                 rel = None
         return rel
+
+    def is_ancestor(self, full: str) -> bool:
+        key = (full.rstrip("/") or "/").casefold()
+        return key == "/" or self.key.startswith(key + "/")
 
     def _strip(self, full: str) -> str | None:
         # Slice by the original root's length: casefold can change it (ß → ss).
@@ -320,27 +376,27 @@ def _tokens(command: str) -> list[str]:
     return out
 
 
-_Segment = tuple[list[str], list[str]]
+_Segment = tuple[list[str], list[str], str]
 
 
 def _segments(tokens: list[str]) -> list[_Segment | str]:
-    """Split at operators (R003-16). Items are (words, redirect targets) (R003-18), or "(" and
-    ")" so that a subshell's `cd` does not leak out."""
+    """Split at operators (R003-16). Items are (words, redirect targets, next operator)
+    (R003-18), or "(" and ")" so that a subshell's `cd` does not leak out."""
     out: list[_Segment | str] = []
     words: list[str] = []
     targets: list[str] = []
 
-    def flush() -> None:
+    def flush(after: str = "") -> None:
         nonlocal words, targets
         if words or targets:
-            out.append((words, targets))
+            out.append((words, targets, after))
         words, targets = [], []
 
     i = 0
     while i < len(tokens):
         tok = tokens[i]
         if tok in _OPERATORS:
-            flush()
+            flush(tok)
             if tok in ("(", ")"):
                 out.append(tok)
         elif _is_redirect(tok):
@@ -377,11 +433,15 @@ def _strip_prefix(words: list[str]) -> list[str]:
         name = _command_name(w)
         if _ASSIGNMENT.match(w) or w in _KEYWORDS:
             i += 1
+        elif w == "function":
+            i += 2  # `function NAME { body; }`: the body follows
         elif name in _PREFIX_WORDS:
             i += 1
             takes_value = _PREFIX_VALUE_OPTIONS.get(name, set())
             while i < len(words) and words[i].startswith("-") and len(words[i]) > 1:
                 i += 2 if words[i] in takes_value else 1
+            if name in _PREFIX_WITH_ARGUMENT and i < len(words):
+                i += 1
         else:
             break
     return words[i:]
@@ -408,6 +468,22 @@ def _abbrev(word: str, option: str, shortest: int) -> bool:
     return len(word) >= shortest and option.startswith(word)
 
 
+_BRACES = re.compile(r"\{([^{}]*,[^{}]*)\}")
+
+
+def _braces(word: str, limit: int = 64) -> list[str]:
+    """Simple brace expansion: `a/{b,c}.kt` → `a/b.kt`, `a/c.kt`."""
+    out, todo = [], [word]
+    while todo and len(out) + len(todo) <= limit:
+        w = todo.pop()
+        m = _BRACES.search(w)
+        if not m:
+            out.append(w)
+            continue
+        todo += [w[:m.start()] + alt + w[m.end():] for alt in m.group(1).split(",")]
+    return out + todo
+
+
 def _unknown_dir(target: str) -> bool:
     return target == "-" or bool(_UNKNOWN_DIR.search(target)) or "$(" in target
 
@@ -432,7 +508,7 @@ class _Shell:
                 if subshells:
                     self.cwd = subshells.pop()
                 continue
-            words, targets = item
+            words, targets, after = item
             for target in targets:
                 if target.casefold() not in _NULL_TARGETS:
                     self.write_arg(target, False, f"redirection > {target}")
@@ -440,12 +516,21 @@ class _Shell:
                     _command_name(w) == "git" for w in words):
                 self.deny(f"`{' '.join(words)}` changes core.hooksPath and would bypass the "
                           f"hooks; {_OWNER_HINT}")
+            self._split_string(words)
             words = _strip_prefix(words)
             if words:
                 self.segment(words, " ".join(words))
+                if _command_name(words[0]) in _CD and after in ("||", "|", "&", "|&"):
+                    self.cwd = None  # the change may or may not have taken effect
 
     def deny(self, reason: str) -> None:
         self.out.add((DENY, reason))
+
+    def _split_string(self, words: list[str]) -> None:
+        """`env -S 'cmd args'` runs its value as a command line."""
+        for i, w in enumerate(words[:-1]):
+            if _command_name(words[0]) == "env" and w in ("-S", "--split-string"):
+                self.nested(words[i + 1])
 
     def nested(self, script: str) -> None:
         """Analyse a script run by a shell (`bash -c`, `eval`) as a command of its own."""
@@ -454,15 +539,17 @@ class _Shell:
 
     # R003-13 ---------------------------------------------------------------------------
     def _forbidden_kit(self, command: str, tokens: list[str]) -> None:
-        low = [t.lower() for t in tokens]
-        if not any("agentkit" in t for t in low):
+        """R003-13 on the whole text, quotes and all, so that a command hidden in a string
+        (`python -c "os.system('agentkit lock unfreeze …')"`) counts too."""
+        text = re.sub(r"[\s'\"`]+", " ", command.replace("\\", "/")).lower()
+        if "agentkit" not in text:
             return
-        pairs = set(zip(low, low[1:]))
-        if ("lock", "unfreeze") in pairs:
+        words = text.split()
+        if re.search(r"\block unfreeze\b", text):
             self.deny(f"`{command}`: lock unfreeze is for the owner only; {_OWNER_HINT}")
-        if ("lock", "freeze") in pairs and any(_abbrev(t, "--force", 3) for t in low):
+        if re.search(r"\block freeze\b", text) and any(_abbrev(t, "--force", 3) for t in words):
             self.deny(f"`{command}`: a forced freeze is for the owner only; {_OWNER_HINT}")
-        if ("chaos", "clear") in pairs:
+        if re.search(r"\bchaos clear\b", text):
             self.deny(f"`{command}`: chaos clear is for the owner only; {_OWNER_HINT}")
 
     # one segment -----------------------------------------------------------------------
@@ -477,6 +564,10 @@ class _Shell:
             self.git(rest, text)
         elif name == "eval":
             self.nested(" ".join(rest))
+        elif name == "cmd" and rest and rest[0].lower() in ("/c", "/k"):
+            self.nested(" ".join(rest[1:]))
+        elif name == "su" and "-c" in rest[:-1]:
+            self.nested(rest[rest.index("-c") + 1])
         elif name in ("sed", "perl") and any(self._in_place(name, w) for w in rest):
             for arg in _args(rest):
                 self.write_arg(arg, False, text)
@@ -485,6 +576,8 @@ class _Shell:
         elif name in _WRITERS:
             for arg in _args(rest):
                 self.write_arg(arg, name in _DESTRUCTIVE, text)
+            if name in _COPIERS:
+                self.copy_into(rest, text)
         if _INTERPRETERS.match(name):
             self.interpreter(name, rest, text)
 
@@ -511,9 +604,21 @@ class _Shell:
         actions = {"-delete", "-exec", "-execdir"}
         if not actions & set(rest):
             return
-        destructive = "-delete" in rest or any(
-            w in ("-exec", "-execdir") and i + 1 < len(rest)
-            and _command_name(rest[i + 1]) in _DESTRUCTIVE for i, w in enumerate(rest))
+        destructive = "-delete" in rest
+        for i, w in enumerate(rest):
+            if w in ("-exec", "-execdir", "-ok", "-okdir"):
+                cmd = []
+                for x in rest[i + 1:]:
+                    if x in (";", "+"):
+                        break
+                    cmd.append(x)
+                cmd = [x for x in cmd if x != "{}"]
+                if cmd:
+                    sub = _command_name(cmd[0])
+                    if sub in _WRITERS or (sub in ("sed", "perl") and any(
+                            self._in_place(sub, x) for x in cmd[1:])):
+                        destructive = True  # it writes to every file found
+                    self.segment(cmd, " ".join(cmd))
         starts = []
         for w in rest:
             if w.startswith("-") or w in ("(", "!"):
@@ -526,8 +631,12 @@ class _Shell:
         cwd = self.cwd
         i = 0
         while i < len(rest) and rest[i].startswith("-"):
-            if rest[i] == "-C" and i + 1 < len(rest):
+            target = None
+            if rest[i] in ("-C", "--work-tree") and i + 1 < len(rest):
                 target = rest[i + 1]
+            elif rest[i].startswith("--work-tree="):
+                target = rest[i].split("=", 1)[1]
+            if target is not None:
                 cwd = None if cwd is None or _unknown_dir(target) else _join(cwd, target)
             i += 2 if rest[i] in _GIT_VALUE_OPTIONS else 1
         if i >= len(rest):
@@ -561,18 +670,32 @@ class _Shell:
         return False
 
     def interpreter(self, name: str, rest: list[str], text: str) -> None:
-        """R003-21: only options before the script or module name count."""
-        for i, w in enumerate(rest):
-            subcommand = name == "deno" and w == "eval"  # `deno eval CODE`
-            if subcommand or _inline_flag(name, w):
-                script = " ".join(rest[i + 1:]) if subcommand or name in ("pwsh", "powershell") \
-                    else (rest[i + 1] if i + 1 < len(rest) else "")
+        """R003-21: options before the script or module name, including their values."""
+        values = _VALUE_OPTIONS.get(_family(name), set())
+        i = 0
+        while i < len(rest):
+            w = rest[i]
+            found = _inline(name, w)
+            if found is not None:
+                attached, whole = found
+                if attached is not None:
+                    script = attached
+                elif whole:
+                    script = " ".join(rest[i + 1:])
+                else:
+                    script = rest[i + 1] if i + 1 < len(rest) else ""
                 self.inline_script(script, text)
                 if name in _SHELLS:
                     self.nested(script)
                 return
-            if w == "-m" or not w.startswith("-"):
+            if _family(name) == "pwsh":
+                if w.lower() in ("-file", "-f"):
+                    return
+                i += 1
+                continue  # PowerShell options come in any order: look at every word
+            if w == "-m" or not w.startswith(("-", "+")):
                 return  # a module or a script file: the rest are its arguments
+            i += 2 if w in values else 1
 
     def inline_script(self, script: str, text: str) -> None:
         low = script.replace("\\", "/").casefold()
@@ -587,6 +710,11 @@ class _Shell:
 
     # write arguments (R003-17 to R003-24) ----------------------------------------------
     def write_arg(self, arg: str, destructive: bool, text: str) -> None:
+        expanded = _braces(arg.strip())
+        if len(expanded) > 1:
+            for one in expanded:
+                self.write_arg(one, destructive, text)
+            return
         arg = arg.strip()
         if not arg or arg.casefold() in _NULL_TARGETS:
             return
@@ -603,6 +731,9 @@ class _Shell:
             return
         rel = ctx.root.rel(p, self.cwd or ctx.root.text)
         if rel is None:
+            if destructive and ctx.root.is_ancestor(_join(self.cwd or ctx.root.text, p)):
+                self.deny(f"`{text}` would remove the repository with its frozen test files; "
+                          f"{_RESTORE_HINT}")
             return
         found = ctx.write(rel)
         if found is not None:
@@ -614,6 +745,40 @@ class _Shell:
                 shown = rel or "the repository root"
                 self.deny(f"`{text}` would remove {shown}, which contains {held}; "
                           f"{_RESTORE_HINT}")
+
+    def copy_into(self, rest: list[str], text: str) -> None:
+        """`cp SRC… DIR`, `cp -t DIR SRC…`, `Copy-Item SRC -Destination DIR`: the file that
+        lands in DIR is a write too."""
+        dest = None
+        sources: list[str] = []
+        i = 0
+        while i < len(rest):
+            w = rest[i]
+            low = w.lower()
+            if low in ("-t", "--target-directory", "-destination") and i + 1 < len(rest):
+                dest = rest[i + 1]
+                i += 2
+                continue
+            if low.startswith("--target-directory="):
+                dest = w.split("=", 1)[1]
+            elif not w.startswith("-") and w != "--":
+                sources.append(w)
+            i += 1
+        if dest is None and len(sources) >= 2:
+            dest = sources.pop()
+        if dest is None or self.cwd is None:
+            return
+        full = _join(self.cwd, dest)
+        rel = self.ctx.root.rel(full, self.cwd)
+        if rel is None:
+            return
+        is_dir = dest.endswith("/") or (Path(self.ctx.root.text) / rel).is_dir()
+        if not is_dir:
+            return
+        for src in sources:
+            name = _norm(src).rstrip("/").rsplit("/", 1)[-1]
+            if name and not any(c in name for c in "*?["):
+                self.write_arg(f"{full}/{name}", False, text)
 
     def glob_arg(self, pattern: str, destructive: bool, text: str) -> None:
         ctx = self.ctx
@@ -708,7 +873,10 @@ def _degraded(cfg, actions: list, cwd: str | None, message: str) -> Decision:
     allowed = False
     for action in actions:
         if isinstance(action, WriteAction) and r is not None:
-            for path in action.paths:
+            paths = action.paths if isinstance(action.paths, list) else []
+            if not paths:
+                allowed = True
+            for path in paths:
                 try:
                     rel = r.rel(path, start)
                 except Exception:  # noqa: BLE001 - an unreadable path is not a test file
