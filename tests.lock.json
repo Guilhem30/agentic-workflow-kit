@@ -85,6 +85,14 @@
       "sha256": "90ed58347976d323a9e028230bc92b3d5344fb9c580b7a1d89e80589e4e346a6",
       "spec": "005"
     },
+    "tests/test_006_handoff.py": {
+      "sha256": "56fe7b53017dab4ce355fe092e96a1916a354bce945c5ebbff4e86df788e865b",
+      "spec": "006"
+    },
+    "tests/test_006_status.py": {
+      "sha256": "f653e7daf3f98068062b50aedc9b4737e7de5ebc1e0fbcb2e5e1d1cb11c6e657",
+      "spec": "006"
+    },
     "tests/test_007_runtests.py": {
       "sha256": "a8ac9642ae5930a8e7858fbc2d48050a42276899083bb0f4801fea31178bb6e0",
       "spec": "007"
