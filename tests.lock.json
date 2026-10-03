@@ -18,6 +18,9 @@
       "sha256": "57918d5d113beb6fc7e8720bc56c0a86ff982507e87be89a662dae6d41faaa3d",
       "spec": "001"
     },
+    "tests/test_002_chaos.py": {
+      "sha256": "9f76bf39c8eff4a0815ddbbda428c96187d24ada882ee57d0ed0f4010d0f9ce4"
+    },
     "tests/test_002_freeze.py": {
       "sha256": "7b6f07422ca18f988fd5949a977c57824c87dbc6bbb21ae53ec49210b2f24330",
       "spec": "002"
