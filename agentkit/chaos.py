@@ -37,11 +37,11 @@ NEEDS_OWNER = "verdict: needs owner"
 CAUSES = ("rejections", "verify", "audit", "protected", "base", "owner")
 DEFAULT_LOG = "chaos-log.jsonl"
 
-DEFAULT_ESCALATE_GLOBS = ["{specs}/000-*/**", "AGENTS.md", "CLAUDE.md", "docs/adr/**",
+_DEFAULT_ESCALATE_GLOBS = ["{specs}/000-*/**", "AGENTS.md", "CLAUDE.md", "docs/adr/**",
                           "agentkit.toml", "{roles}/**"]
-REQUIRED_PHASE = {"approved": "draft", "tests-approved": "tests-draft",
+_REQUIRED_PHASE = {"approved": "draft", "tests-approved": "tests-draft",
                   "frozen": "tests-approved", "done": "frozen"}
-HINT = "owner: agentkit chaos log --open"
+_HINT = "owner: agentkit chaos log --open"
 _SPEC_RE = re.compile(r"^\d{3}$")
 _COMMON = ("seq", "time", "kind", "commit", "user", "actor")
 _KIND_FIELDS = {
@@ -106,7 +106,7 @@ def settings(cfg) -> Settings:
     if isinstance(max_rej, bool) or not isinstance(max_rej, int) or max_rej < 1:
         raise ConfigError("chaos.max_rejections: must be an integer of at least 1")
     log_rel = _check_log_rel(table.get("log", DEFAULT_LOG))
-    globs = table.get("escalate_globs", DEFAULT_ESCALATE_GLOBS)
+    globs = table.get("escalate_globs", _DEFAULT_ESCALATE_GLOBS)
     if not isinstance(globs, list) or not all(isinstance(g, str) for g in globs):
         raise ConfigError("chaos.escalate_globs: must be a list of globs")
     return Settings(enabled=enabled, specs=list(chosen), max_rejections=max_rej,
@@ -158,10 +158,38 @@ def _parse_log(data: bytes, rel: str) -> list[dict]:
         missing = [k for k in need if k not in rec]
         if missing:
             raise ChaosError(f"{where}: a {kind} record lacks {', '.join(missing)}")
-        if isinstance(rec["seq"], bool) or rec["seq"] != no:
+        if type(rec["seq"]) is not int or rec["seq"] != no:
             raise ChaosError(f"{where}: seq is {rec['seq']!r}, expected {no}")
+        bad = _bad_field(rec)
+        if bad:
+            raise ChaosError(f"{where}: {bad}")
         records.append(rec)
     return records
+
+
+def _is_list(value, kind) -> bool:
+    return isinstance(value, list) and all(type(v) is kind for v in value)
+
+
+def _bad_field(rec: dict) -> str | None:
+    """Field types (R020-08 to R020-10), so that no command crashes on a malformed log."""
+    for key in ("time", "kind", "commit", "user", "actor", "spec", "gate", "cause", "reason",
+                "note"):
+        if key in rec and not isinstance(rec[key], str):
+            return f"{key} must be a string"
+    for key, kind in (("detail", str), ("files", str), ("escalations", int)):
+        if key in rec and not _is_list(rec[key], kind):
+            return f"{key} must be a list of {kind.__name__}"
+    if "based_on" in rec and rec["based_on"] is not None and type(rec["based_on"]) is not int:
+        return "based_on must be an integer or null"
+    if "reviews" in rec:
+        reviews = rec["reviews"]
+        if not isinstance(reviews, list) or not all(
+                isinstance(r, dict) and all(isinstance(r.get(k), str)
+                                            for k in ("role", "verdict", "review", "review_sha256"))
+                for r in reviews):
+            return "reviews must be a list of {role, verdict, review, review_sha256} strings"
+    return None
 
 
 def read_log(cfg) -> list[dict]:
@@ -228,6 +256,11 @@ def _normalise(line: str) -> str:
 
 def parse_verdict(text: str, gate: str, role: str) -> str:
     """R020-13: the last non-empty line, normalised: "pass", "fail" or "owner"."""
+    return _verdict(text, gate, role)[0]
+
+
+def _verdict(text: str, gate: str, role: str) -> tuple[str, str]:
+    """(pass | fail | owner, the normalised verdict line)."""
     lines = [line for line in text.splitlines() if line.strip()]
     if not lines:
         raise ChaosUsageError(f"the {role} review has no verdict line (it is empty)")
@@ -236,12 +269,9 @@ def parse_verdict(text: str, gate: str, role: str) -> str:
     for name, passing, failing in REVIEWS.get(gate, []):
         if name != role:
             continue
-        if verdict == passing:
-            return "pass"
-        if verdict == failing:
-            return "fail"
-        if verdict == NEEDS_OWNER:
-            return "owner"
+        for outcome, line in (("pass", passing), ("fail", failing), ("owner", NEEDS_OWNER)):
+            if verdict == line:
+                return outcome, verdict
         raise ChaosUsageError(
             f"the {role} review must end with {passing!r}, {failing!r} or {NEEDS_OWNER!r}; "
             f"its last line is {found!r}")
@@ -275,8 +305,7 @@ def _read_review(path, gate: str, role: str) -> _Review:
         text = data.decode("utf-8")
     except UnicodeDecodeError:
         raise ChaosUsageError(f"the {role} review {path} is not UTF-8") from None
-    verdict = parse_verdict(text, gate, role)
-    line = _normalise([x for x in text.splitlines() if x.strip()][-1])
+    verdict, line = _verdict(text, gate, role)
     return _Review(role, data, verdict, line)
 
 
@@ -310,12 +339,14 @@ def _check_paused(records: list[dict]) -> None:
 
 
 def _changed_since(cfg, base: str) -> list[str]:
+    """Paths changed since the base commit; raises ChaosError when git cannot tell."""
     out: set = set()
-    proc = _git.run(cfg.root, "diff", "--name-only", "--no-renames", "--relative", "-z", base)
-    if proc.returncode == 0:
-        out.update(p.decode("utf-8", "surrogateescape") for p in proc.stdout.split(b"\0") if p)
-    proc = _git.run(cfg.root, "ls-files", "--others", "--exclude-standard", "-z")
-    if proc.returncode == 0:
+    for args in (("diff", "--name-only", "--no-renames", "--relative", "-z", base),
+                 ("ls-files", "--others", "--exclude-standard", "-z")):
+        proc = _git.run(cfg.root, *args)
+        if proc.returncode != 0:
+            raise ChaosError(f"git {args[0]} failed: "
+                             + proc.stderr.decode("utf-8", "replace").strip())
         out.update(p.decode("utf-8", "surrogateescape") for p in proc.stdout.split(b"\0") if p)
     return sorted(out)
 
@@ -327,13 +358,23 @@ def _critical(cfg, st: Settings, base: str) -> tuple[str, list[str]] | None:
     if commit is None or _git.run(root, "merge-base", "--is-ancestor", commit,
                                   "HEAD").returncode != 0:
         return "base", [base]
-    violations = lock.verify(cfg)
+    try:
+        violations = lock.verify(cfg)
+    except lock.LockError as exc:  # an unreadable lock is a verify failure
+        return "verify", [str(exc)]
     if violations:
         return "verify", [f"{v.kind} {v.path}" for v in violations]
-    problems = lock.audit(cfg, base=commit)
+    try:
+        problems = lock.audit(cfg, base=commit)
+    except (lock.LockError, ChaosError) as exc:
+        problems = [str(exc)]
     if problems:
         return "audit", problems
-    hits = [p for p in _changed_since(cfg, commit) if glob_match(p, st.escalate_globs)]
+    try:
+        changed = _changed_since(cfg, commit)
+    except ChaosError as exc:  # fail closed: escalate when git cannot list the changes
+        return "protected", [str(exc)]
+    hits = [p for p in changed if glob_match(p, st.escalate_globs)]
     if hits:
         return "protected", hits
     return None
@@ -399,9 +440,9 @@ def approve(cfg, spec_id, gate, review=None, user=None, now=None) -> dict:
         raise ChaosError(f"spec {spec_id} does not exist")
     if not st.applies(spec.id):
         raise ChaosError(f"spec {spec_id} is not under chaos mode; the owner approves its gates")
-    if spec.status != REQUIRED_PHASE[gate]:
+    if spec.status != _REQUIRED_PHASE[gate]:
         raise ChaosError(f"spec {spec_id} ({spec.dir.name}) is in phase {spec.status}; "
-                         f"{gate} needs phase {REQUIRED_PHASE[gate]}")
+                         f"{gate} needs phase {_REQUIRED_PHASE[gate]}")
     reviews = [] if gate == "frozen" else [_read_review(review, gate, REVIEWS[gate][0][0])]
     _check_paused(records)
     if gate == "tests-approved":
@@ -500,7 +541,7 @@ def clear(cfg, seqs=None, note="", all_open=False, confirm=None, user=None, now=
         raise lock.OwnerCheckError(refused)
     _require_git(cfg)
     if bool(seqs) == bool(all_open):
-        raise ChaosUsageError("give the escalation numbers or --all, not both")
+        raise ChaosUsageError("give exactly one of: escalation numbers, or --all")
     text = (note or "").strip()
     if len(text) < 5:
         raise ChaosUsageError("a note of at least 5 characters is required (--note)")
@@ -515,8 +556,8 @@ def clear(cfg, seqs=None, note="", all_open=False, confirm=None, user=None, now=
         for s in seqs:
             try:
                 wanted.append(int(str(s).lstrip("#")))
-            except ValueError:
-                raise ChaosUsageError(f"not an escalation number: {s!r}") from None
+            except ValueError:  # R020-40: not an open escalation
+                raise ChaosError(f"not an open escalation: {s!r}") from None
         not_open = sorted({s for s in wanted if s not in opened})
         if not_open:
             raise ChaosError("not open escalation(s): " + ", ".join(f"#{s}" for s in not_open))
@@ -612,6 +653,8 @@ def status_suffix(cfg) -> str:
             return ""
         opened = open_escalations(cfg)
     except (ConfigError, ChaosError) as exc:
+        # Cut to 100 characters: line 1 of status (R006-02) is under 100 before the suffix,
+        # so the whole line stays within 200 (R020-32).
         msg = str(exc)
         return f" | chaos: BROKEN ({msg if len(msg) <= 100 else msg[:99] + '…'})"
     if opened:
@@ -657,7 +700,7 @@ def _report(rec: dict) -> int:
           f"{rec['gate']}")
     for d in rec.get("detail") or []:
         print(f"  {d}")
-    print(HINT)
+    print(_HINT)
     return 1
 
 
@@ -669,7 +712,8 @@ def _cli(args) -> int:
         if sub == "approve":
             return _report(approve(cfg, args.id, args.gate, review=args.review))
         if sub == "unfreeze":
-            return _report(unfreeze(cfg, args.paths, args.reason, args.auditor_review,
+            from agentkit.cli import _abs  # paths are relative to the current directory
+            return _report(unfreeze(cfg, _abs(args.paths), args.reason, args.auditor_review,
                                     args.impl_review))
         if sub == "clear":
             rec = clear(cfg, seqs=args.seqs, note=args.note or "", all_open=args.all)
