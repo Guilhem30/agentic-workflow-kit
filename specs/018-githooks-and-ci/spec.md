@@ -76,7 +76,7 @@ The kit files are `githooks/pre-commit`, `githooks/commit-msg`, `ci/github-actio
 - A commit that stages a modified frozen file, while the worktree copy is restored, still fails
   (R018-03 checks the index).
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - The `spec` commit type. Running `sync --check` in pre-commit (the plan had it in CI only).
 - The `--staged` checks.

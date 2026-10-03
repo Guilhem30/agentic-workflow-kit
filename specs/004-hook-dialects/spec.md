@@ -119,7 +119,7 @@ modules claude.py, codex.py, dsh.py, opencode.py, pi.py each export FORMAT
 
 Live end-to-end runs inside each tool. These are optional manual checks (019).
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - Facts the plan did not have: Codex `ask` is unsupported, so it becomes deny; the DeepSeek bridge
   exposes only `{command}`, so frozen-file edits there are caught by Stop verify, not by the guard.

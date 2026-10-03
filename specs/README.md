@@ -1,10 +1,10 @@
 # Specs for agentic-workflow-kit
 
 The kit is built with its own process: spec, then tests, then freeze, then implement. Every spec
-below was derived from `plan.bkp` (Part A, Part B and the verification section) on 2026-10-03.
+below was derived from [`plan.md`](../plan.md) (Part A, Part B and the Verification section) on 2026-10-03.
 All of them were **approved by the owner on 2026-10-03**. Decisions taken during the review are recorded in each spec's Additions and Open questions sections.
 
-Each spec has a section **Additions beyond plan.bkp**. It lists the design choices the plan did
+Each spec has a section **Additions beyond plan.md**. It lists the design choices the plan did
 not make. Approve or reject them explicitly.
 
 | ID | Spec | Depends on | Plan source |

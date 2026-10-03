@@ -91,7 +91,7 @@ and `adapters/claude-code/statusline.py`. The generator functions are
 `adapters.claude_kit(cfg, src, ctx)`, `adapters.claude_derived(cfg, ctx)` and
 `adapters.claude_skill(cfg, skill_dir)`.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - `env.AGENTKIT_AGENT` (used by R002-20).
 - Read in the PreToolUse matcher (for R003-11).

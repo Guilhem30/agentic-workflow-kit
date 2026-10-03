@@ -169,7 +169,7 @@ decides). With `--models tool`, no generated file contains `model` or `effort`.
 
 Validating every profile key's type beyond R001-12. Unknown keys are ignored.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - `AGENTKIT_ROOT` (R001-01): the launcher sets it so hooks work from any subdirectory.
 - `test_cmd_windows` / `test_one_cmd_windows`, `test_globs`, `output_filter_regex`, `ci_setup`.

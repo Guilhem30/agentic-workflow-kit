@@ -50,7 +50,7 @@ adapter can and cannot enforce.
 
 None beyond the earlier specs.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - The `--self` install flag and the `python-unittest` profile for the kit.
 - R019-10 runs the guard demo in a throwaway fixture repository (owner's decision, 2026-10-03:

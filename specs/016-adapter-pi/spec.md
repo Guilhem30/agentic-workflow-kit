@@ -47,7 +47,7 @@ Facts checked on 2026-10-03 in `packages/coding-agent/docs/{extensions,configura
 
 `adapters/pi/agentkit.ts.tmpl`; `adapters.pi_kit(...)`.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - Ask handled through `ctx.ui.confirm`; the in-extension degraded mode and the re-prompt limit.
 

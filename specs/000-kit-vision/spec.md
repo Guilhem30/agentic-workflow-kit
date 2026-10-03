@@ -111,10 +111,11 @@ The lock cannot protect the kit's tests before the lock exists. So the order for
    Shared test helpers that contain no requirement ID (for example `tests/support.py`) belong to
    no spec, so the owner freezes them by path.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - R000-08 (exit code convention), R000-09 and R000-10 make implicit plan intentions explicit.
-- The bootstrap order above replaces the plan's "tests written together with the code" exception.
+- The bootstrap order above: the kit's first tests are approved before any code is written, then
+  frozen with the kit's own lock (plan.md, Execution order).
 - Bootstrap steps 3 and 4 gained the 005 status functions and freezing shared helpers by path
   (owner's decision, 2026-10-03, after writing the 001/002 tests).
 

@@ -158,7 +158,7 @@ Degraded mode (for example, `agentkit.toml` has a syntax error): Edit
 Full shell semantics: variables, command substitution, aliases, scripts written to disk and then
 run. These are caught by end-of-turn verify and pre-commit.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - The `ask` verdict, for hook and CI configuration (the plan's "ask before edits to the guard,
   hooks and CI" moved from permissions into the guard so that every tool gets it).

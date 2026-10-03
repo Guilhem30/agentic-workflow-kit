@@ -49,7 +49,7 @@ With the kotlin-gradle profile, `billing/src/main/kotlin/Invoice.kt` containing
 `- Invoice.kt: Invoice, total` under `## billing/src/main/kotlin`.
 Private and nested declarations are not listed (the regexes are anchored at the start of a line).
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - `--check` mode, run by pre-commit and CI (owner's decision, 2026-10-03; see 018).
 - The 240-character cap.

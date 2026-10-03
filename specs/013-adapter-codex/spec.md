@@ -60,7 +60,7 @@ subagents documentation:
 The kit files are `adapters/codex/hooks.json.tmpl` and `adapters/codex/config.toml.tmpl`.
 The generator functions are `adapters.codex_kit` and `adapters.codex_derived`.
 
-## Additions beyond plan.bkp
+## Additions beyond plan.md
 
 - R013-02 (git top-level lookup), because hooks run in the session cwd.
 - R013-04 values (the plan said "sandbox and approvals" without values).
