@@ -21,7 +21,8 @@ reviewer subagents (R021-10 to R021-20). WORKFLOW.md gains a paragraph (R021-21)
 
 - `tests/test_021_autopilot.py`: temporary git repositories built with `tests/support.py`; one
   spec per phase, `[chaos]` variants (absent, off, malformed, listing other specs, paused through
-  a hand-written log, rejects, unfreezes and clears for R021-22 to R021-24), an unreadable and a
+  a hand-written log, rejects, unfreezes and clears for R021-22, R021-23), dependency chains (order, cycles, dropped,
+  missing, not under chaos), an unreadable and a
   violated lock, `depends` not done or missing, duplicate folders, no git, no base commit. Assert the Step fields, the CLI
   lines and exit codes, and that `next_step` leaves the tree unchanged (hash every file before
   and after).

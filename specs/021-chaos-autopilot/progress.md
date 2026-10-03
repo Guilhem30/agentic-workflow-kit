@@ -12,3 +12,7 @@
   spec, then the owner's `lock unfreeze`; exact duplicate-folder and paused output).
   **Next:** owner answers the 3 open questions, approves 021 and its amendments (000, 010, 011,
   012); then apply the amendments and `/write-tests 021` after 020's tests.
+- 2026-10-03: owner decided: one agent unfreeze per run, dependencies under chaos run first,
+  commit per gate. Added the dependency walk, chain and working spec; third spec-reviewer pass
+  (one blocker: walk order) fixed. **Next:** owner approves 021 and its amendments (000, 010,
+  011, 012); then apply the amendments; `/write-tests 021` after 020's tests.
