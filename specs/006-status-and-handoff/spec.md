@@ -32,7 +32,7 @@ session-start `status` is at most 10 lines. `handoff` writes the resume point in
   files or ask the owner to unfreeze, before anything else. Otherwise, when a spec is active, the
   last line is `next: <first active spec's next action>`.
 - **R006-07** When there is no active spec, status shall print a line suggesting `/spec`
-  (`agentkit new-spec NNN slug`).
+  (`agentkit new-spec slug`). When no spec exists at all, the line suggests `/kickoff` instead.
 - **R006-08** If the lock is unreadable, then status shall report `lock: BROKEN (<error>)`
   instead of failing, and exit 0.
 
@@ -67,6 +67,7 @@ agentkit/handoff.py: snapshot(cfg, spec_id, note="", next_step="", now=None) -> 
 ## Additions beyond plan.md
 
 - The exact status format, the progress `**Next:**` line, and the snapshot markers.
+- Suggesting `/kickoff` in a project with no spec (R006-07) (owner's request, 2026-10-03).
 
 ## Open questions
 

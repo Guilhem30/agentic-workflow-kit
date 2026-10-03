@@ -86,7 +86,7 @@ Nobody types model names. At install, the owner picks one of two modes with `--m
 
 | Tier | Effort | Roles (subagents) | Skills |
 |---|---|---|---|
-| strong | high | spec-writer, spec-reviewer, test-writer, test-auditor, impl-reviewer | `/spec`, `/write-tests` |
+| strong | high | spec-writer, spec-reviewer, test-writer, test-auditor, impl-reviewer | `/kickoff`, `/spec`, `/write-tests` |
 | standard | medium | implementer | `/implement` |
 | fast | low | summarizer | `/freeze`, `/handoff` |
 

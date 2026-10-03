@@ -48,8 +48,8 @@ and [statusline](https://code.claude.com/docs/en/statusline):
 ### CLAUDE.md (block, top)
 - **R012-07** The block shall start with the line `@AGENTS.md`, followed by at most 20 lines of
   Claude-only notes:
-  - skills are invoked as `/spec`, `/write-tests`, `/freeze` (owner only), `/implement` and
-    `/handoff`;
+  - skills are invoked as `/kickoff`, `/spec`, `/write-tests`, `/freeze` (owner only),
+    `/implement` and `/handoff`;
   - the review roles are subagents;
   - `/clear` goes between phases;
   - the compaction preferences (keep the spec ID, phase, failing tests and next task).

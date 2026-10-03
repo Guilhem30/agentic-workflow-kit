@@ -24,6 +24,9 @@ Test names start with their requirement ID.
 - **R005-04** `agentkit new-spec NNN slug [--title T]` shall create `spec.md`, `plan.md`,
   `tasks.md` and `progress.md` from the kit templates, replacing `{{id}}`, `{{slug}}` and
   `{{title}}` (default title: the slug with hyphens as spaces, capitalised).
+- **R005-17** When `new-spec` is given only a slug, it shall use the next free number: one more
+  than the highest existing spec number, or `000` when there is none. Spec folders are never
+  deleted, so numbers are never reused. It prints the chosen number.
 - **R005-05** If spec NNN already exists, or the slug is invalid, then `new-spec` shall create
   nothing and exit 1.
 - **R005-06** `agentkit spec-status NNN STATUS` shall set the status, keep the rest of the file
@@ -63,7 +66,7 @@ agentkit/specs.py:
   list_specs(cfg) -> list[Spec]; find_spec(cfg, spec_id) -> Spec | None
   set_status(spec, status) -> None
   spec_requirements(cfg, spec) -> (testable_ids: list[str], excluded_ids: set[str])
-  new_spec(cfg, spec_id, slug, title="") -> Path
+  new_spec(cfg, spec_id, slug, title="") -> Path   # spec_id None: next free number (R005-17)
 agentkit/trace.py:
   @dataclass TraceResult: spec, required, covered: dict[id, files], unknown: dict[id, files]; missing; ok
   trace_specs(cfg, spec_id=None) -> list[TraceResult]
@@ -83,6 +86,7 @@ agentkit/trace.py:
   waiting for review", so that `status` can tell the owner it is their turn.
 - `new-spec` and `spec-status` commands.
 - The `[removed]` marker.
+- Automatic numbering (R005-17), so an agent can number specs from scratch (owner's request, 2026-10-03).
 
 ## Open questions
 
