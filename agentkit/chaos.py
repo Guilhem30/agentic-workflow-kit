@@ -1,4 +1,8 @@
-"""Chaos mode: agent-approved gates (spec 020)."""
+"""Chaos mode: agent-approved gates (spec 020).
+
+Call 002's functions through the module (`lock.freeze`, `lock.open_console`, as the contract
+writes them), not with `from agentkit.lock import ...`: the tests patch those attributes.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
