@@ -1,11 +1,14 @@
 """Spec 002: owner-only `lock unfreeze` and the unfreeze log."""
 from __future__ import annotations
 
+import io
 import os
 import re
 from datetime import datetime, timezone
+from unittest import mock
 
-from agentkit.lock import LockError, human_check, unfreeze
+from agentkit import lock
+from agentkit.lock import LockError, OwnerCheckError, human_check, unfreeze
 from tests.support import AGENT_ENV_VARS, RepoTestCase, run_cli
 
 NOW = datetime(2026, 10, 3, 12, 34, 56, tzinfo=timezone.utc)
@@ -32,7 +35,7 @@ class UnfreezeTests(RepoTestCase):
         self.assertFalse(self.log_file.exists())
 
     def test_R002_19_reason_too_short(self):
-        for reason in ("", "abc", "    ", "\t\n  \n"):
+        for reason in ("", "abc", "    ", "\t\n  \n", "  abcd  "):
             with self.subTest(reason=reason):
                 with self.assertRaises(LockError):
                     unfreeze(self.cfg(), ["tests/a.txt"], reason, confirm=yes, user="Alice", now=NOW)
@@ -41,6 +44,17 @@ class UnfreezeTests(RepoTestCase):
     def test_R002_19_reason_long_enough(self):
         self.assertEqual(unfreeze(self.cfg(), ["tests/a.txt"], "fixed", confirm=yes, user="Alice",
                                   now=NOW), ["tests/a.txt"])
+
+    def test_R002_19_inner_spaces_count(self):
+        self.assertEqual(unfreeze(self.cfg(), ["tests/a.txt"], "  a b c  ", confirm=yes,
+                                  user="Alice", now=NOW), ["tests/a.txt"])
+
+    def test_R002_19_checked_before_confirmation(self):
+        asked = []
+        with self.assertRaises(LockError):
+            unfreeze(self.cfg(), ["tests/a.txt"], "abc",
+                     confirm=lambda p, e: asked.append(e) or True, user="Alice", now=NOW)
+        self.assertEqual(asked, [])
 
     def test_R002_20_agent_variables_detected(self):
         self.assertIsNone(human_check())
@@ -65,6 +79,27 @@ class UnfreezeTests(RepoTestCase):
         self.assertEqual(code, 2)
         self.assertIn("CLAUDECODE", out)
         self.assert_nothing_changed()
+
+    def test_R002_20_api_checks_agent_environment_itself(self):
+        os.environ["OPENCODE"] = "1"
+        asked = []
+        with self.assertRaises(OwnerCheckError) as ctx:
+            unfreeze(self.cfg(), ["tests/a.txt"], "flaky fixture",
+                     confirm=lambda p, e: asked.append(e) or True, user="Alice", now=NOW)
+        self.assertIn("OPENCODE", str(ctx.exception))
+        self.assertEqual(asked, [])
+        self.assert_nothing_changed()
+
+    def test_R002_21_default_confirm_uses_console_not_stdin(self):
+        reader, writer = io.StringIO("unfreeze 1\n"), io.StringIO()
+        stdin = mock.Mock(spec=io.StringIO)
+        stdin.read.side_effect = stdin.readline.side_effect = AssertionError("stdin was read")
+        with mock.patch("agentkit.lock.open_console", return_value=(reader, writer)), \
+                mock.patch("sys.stdin", stdin):
+            removed = unfreeze(self.cfg(), ["tests/a.txt"], "flaky fixture", user="Alice", now=NOW)
+        self.assertEqual(removed, ["tests/a.txt"])
+        self.assertIn("tests/a.txt", writer.getvalue())
+        self.assertIn("unfreeze 1", writer.getvalue())
 
     def test_R002_21_confirmation_shows_files_and_expects_count(self):
         asked = []
@@ -91,6 +126,21 @@ class UnfreezeTests(RepoTestCase):
                      user="Alice", now=NOW)
         self.assert_nothing_changed()
 
+    def test_R002_22_no_console_changes_nothing(self):
+        with mock.patch("agentkit.lock.open_console", side_effect=OSError("no console")), \
+                mock.patch("sys.stdin", io.StringIO("unfreeze 1\n")):
+            with self.assertRaises(LockError) as ctx:
+                unfreeze(self.cfg(), ["tests/a.txt"], "flaky fixture", user="Alice", now=NOW)
+        self.assertNotIsInstance(ctx.exception, OwnerCheckError)
+        self.assert_nothing_changed()
+
+    def test_R002_22_wrong_console_answer_changes_nothing(self):
+        console = (io.StringIO("unfreeze 2\n"), io.StringIO())
+        with mock.patch("agentkit.lock.open_console", return_value=console):
+            with self.assertRaises(LockError):
+                unfreeze(self.cfg(), ["tests/a.txt"], "flaky fixture", user="Alice", now=NOW)
+        self.assert_nothing_changed()
+
     def test_R002_23_path_not_frozen(self):
         with self.assertRaises(LockError):
             unfreeze(self.cfg(), ["tests/a.txt", "tests/notfrozen.txt"], "flaky fixture",
@@ -108,10 +158,25 @@ class UnfreezeTests(RepoTestCase):
         self.assertEqual(sorted(removed), ["tests/a.txt", "tests/b.txt"])
         self.assertEqual(sorted(self.read_lock()["files"]), ["tests/keep.txt", "tests/sub/c.txt"])
         log = self.log_file.read_text(encoding="utf-8")
-        self.assertIn("## 2026-10-03T12:34:56Z - Alice\n"
+        self.assertIn("\n\n## 2026-10-03T12:34:56Z - Alice\n"
                       "reason: flaky fixture\n"
                       "- tests/a.txt\n"
                       "- tests/b.txt\n", log)
+
+    def test_R002_24_paths_sorted_in_log(self):
+        unfreeze(self.cfg(), ["tests/b.txt", "tests/a.txt"], "flaky fixture", confirm=yes,
+                 user="Alice", now=NOW)
+        log = self.log_file.read_text(encoding="utf-8")
+        self.assertIn("- tests/a.txt\n- tests/b.txt\n", log)
+
+    def test_R002_24_unknown_user_when_git_has_none(self):
+        empty = self.write(self.tmp / "empty.gitconfig", "")
+        os.environ["GIT_CONFIG_GLOBAL"] = str(empty)
+        os.environ["GIT_CONFIG_NOSYSTEM"] = "1"
+        self.git("config", "--unset", "user.name")
+        unfreeze(self.cfg(), ["tests/a.txt"], "flaky fixture", confirm=yes, now=NOW)
+        log = self.log_file.read_text(encoding="utf-8")
+        self.assertIn("## 2026-10-03T12:34:56Z - unknown\n", log)
 
     def test_R002_24_directory_unfreezes_its_frozen_files(self):
         removed = unfreeze(self.cfg(), ["tests/sub"], "flaky fixture", confirm=yes, user="Alice",
@@ -127,9 +192,8 @@ class UnfreezeTests(RepoTestCase):
     def test_R002_25_new_log_starts_with_append_only_header(self):
         unfreeze(self.cfg(), ["tests/a.txt"], "flaky fixture", confirm=yes, user="Alice", now=NOW)
         log = self.log_file.read_text(encoding="utf-8")
-        header = log.split("\n## ", 1)[0]
-        self.assertFalse(log.startswith("## "))
-        self.assertRegex(header.lower(), r"append[- ]only")
+        self.assertTrue(log.startswith(lock.LOG_HEADER))
+        self.assertRegex(lock.LOG_HEADER.lower(), r"append[- ]only")
 
     def test_R002_25_earlier_entries_kept_verbatim(self):
         unfreeze(self.cfg(), ["tests/a.txt"], "first reason", confirm=yes, user="Alice", now=NOW)

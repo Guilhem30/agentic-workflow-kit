@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import os
+import re
 
-from agentkit.config import load_config
+from agentkit import config
+from agentkit.config import ConfigError, load_config
 from tests.support import TempDirTestCase, run_cli
 
 TIERS = ("strong", "standard", "fast")
@@ -56,53 +58,79 @@ class ModelTests(TempDirTestCase):
         self.assertEqual(code, 0)
         self.assertIn("kit", out)
 
-    def test_R001_21_install_help_summarises_modes(self):
+    def test_R001_19_absent_mode_means_tool(self):
+        root = self.project("p", kit='profile = "fixture"\nadapters = ["claude-code"]')
+        self.assertEqual(load_config(root=root).models("claude-code"), {})
+
+    def test_R001_19_invalid_mode(self):
+        root = self.project("p", kit='profile = "fixture"\nadapters = ["claude-code"]',
+                            rest='[models]\nmode = "auto"\n')
+        with self.assertRaises(ConfigError) as ctx:
+            load_config(root=root)
+        self.assertIn("models.mode", str(ctx.exception))
+        os.chdir(root)
+        code, out = run_cli("models")
+        self.assertEqual(code, 2)
+        self.assertIn("models.mode", out)
+
+    def test_R001_21_models_help_text(self):
+        lines = config.MODELS_HELP.strip("\n").splitlines()
+        self.assertLessEqual(len(lines), 8)
+        self.assertTrue(any("kit" in l and "recommended" in l.lower() for l in lines))
+        self.assertTrue(any(re.search(r"\btool\b", l) for l in lines))
+
+    def test_R001_21_install_help_prints_it(self):
         os.chdir(self.tmp)
         _, out = run_cli("install", "--help")
-        self.assert_mode_summary(out)
+        self.assertIn(config.MODELS_HELP.strip("\n"), out)
 
-    def test_R001_21_missing_models_option_summarises_modes(self):
+    def test_R001_21_missing_models_option_prints_it(self):
         target = self.tmp / "fresh"
         target.mkdir()
         os.chdir(target)
         _, out = run_cli("install")
-        self.assert_mode_summary(out)
-
-    def assert_mode_summary(self, out: str):
-        self.assertIn("--models", out)
-        self.assertRegex(out, r"\btool\b")
-        recommended = [line for line in out.splitlines() if "recommended" in line.lower()]
-        self.assertTrue(recommended, "no line marks a mode as recommended")
-        self.assertTrue(any("kit" in line for line in recommended))
+        self.assertIn(config.MODELS_HELP.strip("\n"), out)
 
     def test_R001_22_models_command_kit_mode(self):
         root, _ = self.cfg_for("kit", adapters='["claude-code", "opencode"]')
         os.chdir(root)
         code, out = run_cli("models")
         self.assertEqual(code, 0)
-        self.assertIn("claude-code", out)
-        self.assertIn("opencode", out)
-        lines = out.splitlines()
-        for tier, model, effort in (("strong", "opus", "high"), ("standard", "sonnet", "medium"),
-                                    ("fast", "haiku", "low")):
-            with self.subTest(tier=tier):
-                self.assertTrue(any(tier in l and model in l and effort in l for l in lines),
-                                f"no line shows {tier} -> {model} / {effort}")
-        self.assertGreaterEqual(out.count("decided by the tool"), 3)  # opencode's three tiers
+        self.assert_lines_in_order(out, [
+            "claude-code: mode kit",
+            "  strong: opus (effort high)",
+            "  standard: sonnet (effort medium)",
+            "  fast: haiku (effort low)",
+            "opencode: mode kit",
+            "  strong: decided by the tool",
+            "  standard: decided by the tool",
+            "  fast: decided by the tool",
+        ])
 
     def test_R001_22_models_command_tool_mode(self):
-        root, _ = self.cfg_for("tool", adapters='["claude-code", "opencode"]')
+        root, _ = self.cfg_for("tool", adapters='["claude-code"]')
         os.chdir(root)
         code, out = run_cli("models")
         self.assertEqual(code, 0)
-        self.assertIn("tool", out)
+        self.assert_lines_in_order(out, ["claude-code: mode tool"]
+                                   + [f"  {t}: decided by the tool" for t in TIERS])
         self.assertNotIn("opus", out.lower())
-        self.assertGreaterEqual(out.count("decided by the tool"), 6)
+
+    def assert_lines_in_order(self, out: str, expected: list[str]):
+        lines = [l.rstrip() for l in out.splitlines()]
+        start = lines.index(expected[0]) if expected[0] in lines else -1
+        self.assertGreaterEqual(start, 0, f"missing line {expected[0]!r} in:\n{out}")
+        self.assertEqual(lines[start:start + len(expected)], expected)
 
     def test_R001_23_override_table_in_kit_mode(self):
         _, cfg = self.cfg_for("kit", rest='[models.claude-code]\nfast = "sonnet"\n')
         self.assertEqual(cfg.models("claude-code"),
                          {"strong": "opus", "standard": "sonnet", "fast": "sonnet"})
+
+    def test_R001_23_override_for_adapter_without_map(self):
+        _, cfg = self.cfg_for("kit", adapters='["opencode"]',
+                              rest='[models.opencode]\nstrong = "local-big"\n')
+        self.assertEqual(cfg.models("opencode"), {"strong": "local-big"})
 
     def test_R001_23_override_table_ignored_in_tool_mode(self):
         _, cfg = self.cfg_for("tool", rest='[models.claude-code]\nfast = "sonnet"\n')

@@ -6,7 +6,7 @@ import json
 import os
 from datetime import datetime, timezone
 
-from agentkit.lock import LockError, freeze
+from agentkit.lock import LockError, OwnerCheckError, freeze
 from tests.support import RepoTestCase, rid, run_cli, sha256_lf
 
 NOW = datetime(2026, 10, 3, 12, 34, 56, tzinfo=timezone.utc)
@@ -76,6 +76,14 @@ class FreezePathsTests(RepoTestCase):
     def test_R002_06_directory_with_trailing_slash(self):
         self.write("core/model/src/test/kotlin/EngineTest.kt")
         result = freeze(self.cfg(), paths=["core/model/src/test/"])
+        self.assertEqual(result.added, ["core/model/src/test/kotlin/EngineTest.kt"])
+
+    def test_R002_06_directory_skips_build_output_and_ignored_files(self):
+        self.write(".gitignore", "core/model/src/test/tmp/\n")
+        self.write("core/model/src/test/kotlin/EngineTest.kt")
+        self.write("core/model/src/test/build/Generated.kt")
+        self.write("core/model/src/test/tmp/scratch.kt")
+        result = freeze(self.cfg(), paths=["core/model/src/test"])
         self.assertEqual(result.added, ["core/model/src/test/kotlin/EngineTest.kt"])
 
     def test_R002_10_already_frozen_same_hash_is_unchanged(self):
@@ -210,6 +218,25 @@ class FreezeSpecTests(RepoTestCase):
                 self.assertEqual(self.snapshot(self.lock_file), before)
                 self.assertEqual(self.spec_status("004", slug="rules"), status)
 
+    def test_R002_12_unknown_spec(self):
+        before = self.snapshot(self.lock_file)
+        code, out = run_cli("lock", "freeze", "--spec", "999")
+        self.assertEqual(code, 1)
+        self.assertIn("999", out)
+        self.assertEqual(self.snapshot(self.lock_file), before)
+
+    def test_R002_12_api_raises(self):
+        self.write_spec("004", "approved", slug="rules")
+        before = self.snapshot(self.lock_file)
+        with self.assertRaises(LockError) as ctx:
+            freeze(self.cfg(), spec="004")
+        self.assertNotIsInstance(ctx.exception, OwnerCheckError)
+        self.assertEqual(self.snapshot(self.lock_file), before)
+
+    def test_R002_13_api_sets_status_frozen(self):
+        freeze(self.cfg(), spec="004")
+        self.assertEqual(self.spec_status("004", slug="rules"), "frozen")
+
     def test_R002_13_success_sets_status_frozen(self):
         spec_file = self.root / "specs/004-rules/spec.md"
         before = spec_file.read_text(encoding="utf-8")
@@ -229,6 +256,18 @@ class FreezeSpecTests(RepoTestCase):
         self.assertIn("AGENTKIT_AGENT", out)
         self.assertEqual(self.snapshot(self.lock_file), before)
         self.assertEqual(self.spec_status("004", slug="rules"), "approved")
+
+    def test_R002_31_api_checks_agent_environment_itself(self):
+        self.write_spec("004", "approved", slug="rules")
+        os.environ["CODEX_SANDBOX"] = "seatbelt"
+        asked = []
+        before = self.snapshot(self.lock_file)
+        with self.assertRaises(OwnerCheckError) as ctx:
+            freeze(self.cfg(), spec="004", force=True,
+                   confirm=lambda p, e: asked.append(e) or True, user="Alice", now=NOW)
+        self.assertIn("CODEX_SANDBOX", str(ctx.exception))
+        self.assertEqual(asked, [])
+        self.assertEqual(self.snapshot(self.lock_file), before)
 
     def test_R002_31_force_requires_exact_confirmation(self):
         self.write_spec("004", "approved", slug="rules")
@@ -253,7 +292,7 @@ class FreezeSpecTests(RepoTestCase):
         self.write_spec("004", "approved", slug="rules")
         freeze(self.cfg(), spec="004", force=True, confirm=lambda p, e: True, user="Alice", now=NOW)
         log = self.log_file.read_text(encoding="utf-8")
-        entry = ("## 2026-10-03T12:34:56Z - Alice\n"
+        entry = ("\n\n## 2026-10-03T12:34:56Z - Alice\n"
                  "forced freeze of spec 004 (status was approved)\n"
                  + "".join(f"- {p}\n" for p in self.SPEC_004))
         self.assertIn(entry, log)

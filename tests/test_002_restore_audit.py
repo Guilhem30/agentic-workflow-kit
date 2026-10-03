@@ -51,6 +51,13 @@ class RestoreTests(RepoTestCase):
         self.assertEqual((restored, failed), (["tests/a.txt"], []))
         self.assertEqual((self.root / "tests/a.txt").read_bytes(), b"a1\n")
 
+    def test_R002_26_path_not_frozen_is_not_restored(self):
+        self.write("tests/notfrozen.txt")
+        restored, failed = restore(self.cfg(), paths=["tests/notfrozen.txt"])
+        self.assertEqual((restored, failed), ([], ["tests/notfrozen.txt"]))
+        code, _ = run_cli("lock", "restore", "tests/notfrozen.txt")
+        self.assertEqual(code, 1)
+
     def test_R002_26_command_succeeds_when_all_restored(self):
         self.write("tests/a.txt", "hacked\n")
         code, _ = run_cli("lock", "restore")
@@ -144,6 +151,14 @@ class AuditTests(RepoTestCase):
         self.assertEqual(audit(self.cfg(), base="HEAD"), [])
         code, _ = run_cli("lock", "audit")
         self.assertEqual(code, 0)
+
+    def test_R002_29_lock_and_log_missing_at_base(self):
+        self.lock_file.unlink()
+        self.log_file.unlink()
+        self.commit_all()  # base has neither the lock nor the log
+        self.write_lock(["tests/a.txt"])
+        self.write("tests.unfreeze-log.md", LOG_HEADER)
+        self.assertEqual(audit(self.cfg(), base="HEAD"), [])
 
     def test_R002_29_unknown_base_ref(self):
         self.commit_all()

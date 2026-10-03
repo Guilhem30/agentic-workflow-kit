@@ -124,11 +124,17 @@ class StatusTests(RepoTestCase):
 
     def test_R002_18_status_dict(self):
         s = status(self.cfg())
-        frozen = s["frozen"] if isinstance(s["frozen"], int) else len(s["frozen"])
-        self.assertEqual(frozen, 3)
-        self.assertEqual(s["by_spec"].get("004"), 2)
-        self.assertEqual(sorted(s["unfrozen_candidates"]), self.unfrozen)
+        self.assertEqual(s["frozen"], 3)
+        self.assertEqual(s["by_spec"], {"004": 2, None: 1})
+        self.assertEqual(s["unfrozen_candidates"], self.unfrozen)
         self.assertEqual(kinds(s["violations"]), [("tests/s2.txt", "modified")])
+
+    def test_R002_18_status_command_exit_code(self):
+        code, _ = run_cli("lock", "status")
+        self.assertEqual(code, 1)  # tests/s2.txt is violated
+        self.write("tests/s2.txt")  # back to the frozen content
+        code, _ = run_cli("lock", "status")
+        self.assertEqual(code, 0)
 
     def test_R002_18_status_command_caps_the_list(self):
         _, out = run_cli("lock", "status")

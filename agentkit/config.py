@@ -5,10 +5,18 @@ from dataclasses import dataclass
 from pathlib import Path
 
 CONFIG_NAME = "agentkit.toml"
+TIERS = ("strong", "standard", "fast")
+TIER_EFFORT = {"strong": "high", "standard": "medium", "fast": "low"}
+
+
+def __getattr__(name: str):
+    if name == "MODELS_HELP":
+        raise NotImplementedError("R001-21")
+    raise AttributeError(name)
 
 
 class ConfigError(Exception):
-    """A configuration problem. Commands report it and exit 2."""
+    """A configuration problem. The CLI reports it and exits 2."""
 
 
 @dataclass
@@ -57,7 +65,7 @@ class Config:
     def self_hosted(self) -> bool:
         raise NotImplementedError("R001-05")
 
-    def models(self, adapter: str | None = None) -> dict[str, str]:
+    def models(self, adapter: str) -> dict[str, str]:
         raise NotImplementedError("R001-17")
 
     @property

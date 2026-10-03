@@ -5,7 +5,17 @@ from dataclasses import dataclass
 
 
 class LockError(Exception):
-    """A lock problem. Lock commands report it and exit 1."""
+    """A lock problem. The CLI reports it and exits 1."""
+
+
+class OwnerCheckError(LockError):
+    """An owner-only action refused (agent environment, no confirmation). The CLI exits 2."""
+
+
+def __getattr__(name: str):
+    if name == "LOG_HEADER":
+        raise NotImplementedError("R002-25")
+    raise AttributeError(name)
 
 
 @dataclass
@@ -35,7 +45,6 @@ def status(cfg) -> dict:
 
 def freeze(cfg, paths=None, spec=None, all_candidates=False,
            force=False, confirm=None, user=None, now=None) -> FreezeResult:
-    # force/confirm/user/now are NOT in the spec's contract yet: proposed so R002-31/32 are testable.
     raise NotImplementedError("R002-06")
 
 
@@ -45,6 +54,10 @@ def unfreeze(cfg, paths, reason, confirm=None, user=None, now=None) -> list[str]
 
 def human_check() -> str | None:
     raise NotImplementedError("R002-20")
+
+
+def open_console():
+    raise NotImplementedError("R002-21")
 
 
 def restore(cfg, paths=None, ref="HEAD") -> tuple[list[str], list[str]]:

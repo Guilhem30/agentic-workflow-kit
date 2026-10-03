@@ -3,9 +3,13 @@ from __future__ import annotations
 
 import os
 import re
+from pathlib import Path
 
+import agentkit
 from agentkit.config import ConfigError, find_root, load_config, load_profile
 from tests.support import TempDirTestCase, rid, run_cli
+
+KIT_SOURCE = Path(agentkit.__file__).resolve().parent.parent
 
 
 class LocatingTests(TempDirTestCase):
@@ -75,8 +79,7 @@ class LocatingTests(TempDirTestCase):
             load_config(root=root)
         msg = str(ctx.exception)
         self.assertIn("agentkit.toml", msg)
-        self.assertIn("line 3", msg)
-        self.assertIn("column", msg)
+        self.assertRegex(msg, r"line 3, column \d+")
 
     def test_R001_04_invalid_toml_command_exits_2(self):
         root = self.tmp / "bad"
@@ -112,6 +115,17 @@ class SettingsTests(TempDirTestCase):
         self.assertEqual(cfg.budgets, {"agents_md": 1500})
         self.assertEqual(cfg.guard, {"extra": ["x"]})
         self.assertEqual(cfg.profile["test_cmd"], "make test")
+
+    def test_R001_05_defaults_for_absent_keys(self):
+        cfg = load_config(root=self.project("p"))
+        self.assertEqual(cfg.adapters, [])
+        self.assertIs(cfg.self_hosted, False)
+        self.assertEqual(cfg.budgets, {})
+        self.assertEqual(cfg.guard, {})
+
+    def test_R001_06_state_dir(self):
+        root = self.project("p", rest='[paths]\nspecs = "elsewhere"\n')
+        self.assertEqual(load_config(root=root).state_dir.resolve(), root / ".agentkit" / "state")
 
     def test_R001_06_path_defaults(self):
         root = self.project("p")
@@ -158,11 +172,11 @@ class SettingsTests(TempDirTestCase):
                 root = self.project(f"p-{key}", rest=rest)
                 with self.assertRaises(ConfigError) as ctx:
                     load_config(root=root)
-                self.assertRegex(str(ctx.exception), rf"\b{key}\b")
+                self.assertIn(f"ci.{key}", str(ctx.exception))
                 os.chdir(root)
                 code, out = run_cli("models")
                 self.assertEqual(code, 2)
-                self.assertRegex(out, rf"\b{key}\b")
+                self.assertIn(f"ci.{key}", out)
 
     def test_R001_07_python_default_per_platform(self):
         cfg = load_config(root=self.project("p"))
@@ -188,12 +202,22 @@ class ProfileTests(TempDirTestCase):
         self.write(root / "profiles/generic.toml", 'test_cmd = "generic-marker"\n')
         self.assertEqual(load_config(root=root).profile["test_cmd"], "generic-marker")
 
+    def test_R001_08_kit_source_is_the_package_parent(self):
+        cfg = load_config(root=self.project("p"))
+        self.assertEqual(Path(cfg.kit_source).resolve(), KIT_SOURCE)
+
+    def test_R001_08_kit_ships_generic_profile(self):
+        root = self.project("p", kit="adapters = []", profile_name="")
+        self.assertIsInstance(load_profile("generic", root), dict)
+        self.assertEqual(load_config(root=root).profile["frozen_globs"], ["tests/**", "test/**"])
+
     def test_R001_09_missing_profile_lists_searched_dirs(self):
         root = self.project("p", kit='profile = "nope"', profile_name="")
         with self.assertRaises(ConfigError) as ctx:
             load_config(root=root)
         msg = str(ctx.exception).replace("\\", "/")
         self.assertIn(".agentkit/profiles", msg)
+        self.assertIn((KIT_SOURCE / "profiles").as_posix().lower(), msg.lower())
         self.assertGreaterEqual(msg.count("profiles"), 3)  # three directories searched
 
     def test_R001_09_missing_profile_command_exits_2(self):
@@ -213,15 +237,17 @@ class ProfileTests(TempDirTestCase):
             "source_globs": [],
             "build_output_globs": ["**/build/**", "**/dist/**", "**/node_modules/**",
                                    "**/__pycache__/**"],
-            "ci_setup": "",
+            "ci_setup": "", "output_filter_regex": "", "format_cmd": "", "lint_cmd": "",
         }
         for key, value in expected.items():
             with self.subTest(key=key):
                 self.assertEqual(prof[key], value)
-        for key in ("req_id_regex", "output_filter_regex", "format_cmd", "lint_cmd"):
-            with self.subTest(key=key):
-                self.assertIn(key, prof)
+        self.assertIn("req_id_regex", prof)
         self.assertEqual(prof["codemap"]["symbol_regexes"], [])
+
+    def test_R001_10_load_profile_returns_raw_table(self):
+        root = self.project("p", profile_body='test_cmd = "a"\n')
+        self.assertEqual(load_profile("fixture", root), {"test_cmd": "a"})
 
     def test_R001_10_test_globs_default_follows_frozen_globs(self):
         root = self.project("p", profile_body='frozen_globs = ["spec/**"]\n')
@@ -252,6 +278,12 @@ class ProfileTests(TempDirTestCase):
         code, out = run_cli("models")
         self.assertEqual(code, 2)
         self.assertIn("req_id_regex", out)
+
+    def test_R001_12_regex_must_compile(self):
+        root = self.project("p", rest="[profile]\nreq_id_regex = '(R)(\\d{3}'\n")
+        with self.assertRaises(ConfigError) as ctx:
+            load_config(root=root)
+        self.assertIn("req_id_regex", str(ctx.exception))
 
     def test_R001_12_regex_with_two_groups_accepted(self):
         root = self.project("p", rest="[profile]\nreq_id_regex = 'REQ(\\d+)\\.(\\d+)'\n")
