@@ -34,9 +34,9 @@ defined below.
   `agentkit status --format F` shall accept F in {`claude`, `codex`, `dsh`, `opencode`, `pi`}.
   An unknown F exits 2.
 - **R004-02** These commands shall read one JSON payload from stdin. An empty, non-JSON or
-  non-object payload is treated as `{}`. For `guard`, such a payload shall also print
-  `agentkit guard error (allowing): <message>` on stderr, since there is nothing to classify
-  (R003-31).
+  non-object payload is treated as `{}`. For `guard`, such a payload is a degraded allow
+  (R004-22): `agentkit guard error (allowing): <message>` on stderr and exit 1, since there is
+  nothing to classify (R003-31). A valid object without a tool is a normal allow.
 
 ### Mapping tool calls to actions
 - **R004-03** The tool name shall be compared case-insensitively, after stripping any `mcp__…__`
@@ -77,28 +77,33 @@ defined below.
 - **R004-13** Plugin protocol (`opencode`, `pi`): the input is `{"tool": str, "args": object, "cwd": str}`.
   The output is always `{"decision": "allow"|"ask"|"deny", "reason": str}` with exit 0.
 - **R004-14** For `opencode`, ask shall be turned into deny as in R004-12. For `pi`, ask is kept.
-
 - **R004-22** When the guard's Decision is degraded (003 degraded mode, `Decision.degraded`),
   an allow shall exit 1 with the guard's message on stderr in every format, instead of the exit 0
   of R004-10, R004-12 and R004-13. The tools treat exit 1 as a non-blocking error (R003-30).
-  A degraded deny uses the format's normal deny response.
+  `claude`, `codex` and `dsh` print nothing on stdout; the plugin protocol still prints its
+  allow JSON, so that the plugin does not fall back to its own degraded mode. A degraded deny
+  uses the format's normal deny response and exit 0.
 
 ### End-of-turn verify
 - **R004-15** `verify --format F` shall run `lock verify` (002). Its problems are each violated
   file, plus a hint line about `lock restore` or asking the owner.
 - **R004-16** For `claude`, `codex` and `dsh`, when there are problems and the payload's
   `stop_hook_active` is not true, verify shall print `{"decision":"block","reason":<problems>}`.
+  Without problems it prints nothing. Every `verify --format F` exits 0, so that the tool reads
+  its JSON.
 - **R004-17** For `claude`, when there are problems and `stop_hook_active` is true, verify shall
   print `{"systemMessage": <problems>}` instead of blocking again, so there is no endless loop.
   For `codex` and `dsh` it prints nothing.
-- **R004-18** For the plugin protocol, verify shall print `{"ok": bool, "message": str}`.
+- **R004-18** For the plugin protocol, verify shall print `{"ok": bool, "message": str}`, with
+  `ok` false exactly when there are problems and the problems in `message`.
 - **R004-19** `verify` without `--format` shall print the problems or `verify: OK`, and exit 1
   or 0.
 
 ### Session-start status
 - **R004-20** For `claude` and `codex`, `status --format F` shall print
   `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":<status lines>}}`.
-  For the plugin protocol it prints `{"context": <status lines>}`.
+  For the plugin protocol it prints `{"context": <status lines>}`. The status lines are 006's
+  `status_lines(cfg)` joined with `\n`, and the command exits 0.
 
 ### Conformance fixtures
 - **R004-21** The kit shall contain recorded payloads under `tests/fixtures/payloads/<tool>/`,
