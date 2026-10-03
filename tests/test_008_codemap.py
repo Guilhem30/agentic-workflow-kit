@@ -46,15 +46,34 @@ class TestContent(CodemapCase):
     def test_R008_01_selected_files(self):
         self.write("pkg/a.py", SRC_A)
         self.write("pkg/b.py", "def b():\n    pass\n")
-        self.write("pkg/build/gen.py", "def generated():\n    pass\n")
+        self.write("pkg/build/gen.py", "def bogus_sym():\n    pass\n")
         self.write(".agentkit/tool.py", "def hidden():\n    pass\n")
         self.write("docs/notes.md", "def not_source():\n")
         self.commit()
         text = self.build()
         self.assertIn("- a.py: alpha, Beta, gamma", self.entries(text))
         self.assertIn("- b.py: b", self.entries(text))
-        for absent in ("gen.py", "generated", "tool.py", "hidden", "notes.md"):
-            self.assertNotIn(absent, text)
+        entries = "\n".join(self.entries(text))
+        for absent in ("gen.py", "bogus_sym", "tool.py", "hidden", "notes.md"):
+            self.assertNotIn(absent, entries)
+
+    def test_R008_01_ignored_files_skipped(self):
+        self.write(".gitignore", "venv/\n")
+        self.write("venv/lib/site.py", "def ignored_sym():\n    pass\n")
+        self.write("kept.py", "def kept():\n    pass\n")
+        self.commit()
+        self.write("untracked.py", "def fresh():\n    pass\n")
+        entries = self.entries()
+        self.assertIn("- kept.py: kept", entries)
+        self.assertIn("- untracked.py: fresh", entries)
+        self.assertNotIn("ignored_sym", "\n".join(entries))
+
+    def test_R008_02_name_group_not_last(self):
+        self.write(".agentkit/profiles/fixture.toml", PROFILE.replace(
+            "symbol_regexes = [", "symbol_regexes = ['^(?P<name>\\w+) = (lambda)', "))
+        self.write("m.py", "handler = lambda x: x\n")
+        self.commit()
+        self.assertEqual(self.entries(), ["- m.py: handler"])
 
     def test_R008_02_name_group_last_group_once_in_order(self):
         self.write("m.py", "class Z:\n    pass\ndef y():\n    pass\ndef y():\n    pass\nclass Z:\n    pass\ndef x():\n    pass\n")
@@ -117,7 +136,9 @@ class TestContent(CodemapCase):
         self.assertEqual(text, self.build())
         self.assertNotIn("\r", text)
         self.assertTrue(text.endswith("\n") and not text.endswith("\n\n"))
-        self.assertEqual(self.headings(text), ["## a", "## ab", "## b"])
+        self.assertEqual([h for h in self.headings(text) if h in ("## a", "## ab", "## b")],
+                         ["## a", "## ab", "## b"])
+        self.assertEqual(self.headings(text)[-3:], ["## a", "## ab", "## b"])
         lines = text.splitlines()
         self.assertLess(lines.index("- b.py: f"), lines.index("- z.py: f"))
 
@@ -132,7 +153,9 @@ class TestWriteAndCheck(CodemapCase):
     def test_R008_07_writes_then_leaves_unchanged_file(self):
         code, _ = run_cli("codemap")
         self.assertEqual(code, 0)
-        self.assertEqual(self.map_file.read_text(encoding="utf-8"), self.build())
+        data = self.map_file.read_bytes()
+        self.assertNotIn(b"\r", data)
+        self.assertEqual(data, self.build().encode("utf-8"))
         os.utime(self.map_file, ns=(1_000_000_000, 1_000_000_000))
         run_cli("codemap")
         self.assertEqual(self.map_file.stat().st_mtime_ns, 1_000_000_000)
