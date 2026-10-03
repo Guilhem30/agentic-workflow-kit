@@ -58,7 +58,8 @@ skills and roles from the repo's neutral sources, and `sync --check` fails CI on
 - **R010-09** Where DIR is a git repository, install shall set `git config core.hooksPath .githooks`.
   Otherwise it prints a note on how to do so.
 - **R010-10** When `--owner` is given, install shall maintain a block in `.github/CODEOWNERS` that
-  assigns the owner to the lock, the unfreeze log, `.agentkit/`, `.githooks/` and every frozen glob.
+  assigns the owner to the lock, the unfreeze log, `.agentkit/`, `.githooks/`, every frozen glob,
+  the chaos log (`[chaos] log`, default `chaos-log.jsonl`) and `<paths.specs>/*/reviews/` (020).
 - **R010-11** install shall maintain a `.gitignore` block with `.agentkit/state/`, `__pycache__/`
   and `*.agentkit-new`.
 
@@ -127,6 +128,8 @@ agentkit/adapters.py: kit_files(name, cfg, src, ctx), derived_files(name, cfg, c
 
 ## Additions beyond plan.md
 
+- Chaos mode (020 amendment, ADR 0002, approved by the owner on 2026-10-03): the chaos log and the
+  stored reviews in CODEOWNERS (R010-10).
 - The file-mode model and the block markers (needed for "don't overwrite what you customised"
   in shared files such as AGENTS.md).
 - `--ci-os` and the rule that CI environments are chosen explicitly (owner's decision,

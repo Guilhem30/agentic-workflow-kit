@@ -21,7 +21,7 @@ quality or speed much. The first real user is the kit itself (019).
 ## Personas
 
 - **Owner**: the human. Approves every gate (spec approved, tests approved, freeze) and is the
-  only one who unfreezes tests.
+  only one who unfreezes tests, except in chaos mode, which only the owner enables (020).
 - **Agent session**: an LLM agent working in some tool (Claude Code, Codex CLI, OpenCode,
   DeepSeek Harness, Pi, or a tool with no adapter). Follows AGENTS.md. May be careless or try
   shortcuts.
@@ -33,7 +33,7 @@ quality or speed much. The first real user is the kit itself (019).
 |---|---|
 | Spec | `specs/NNN-slug/spec.md`: EARS requirements with stable IDs, plus an API contract |
 | Phase | A spec's `status:` (see 005) |
-| Gate | A phase transition that only the owner may approve |
+| Gate | A phase transition that only the owner may approve, except in chaos mode, which only the owner enables (020) |
 | Frozen file | A file recorded in the lock; it must not change |
 | Lock | `tests.lock.json`: path → hash of each frozen file (002) |
 | Unfreeze | The owner removes files from the lock; every unfreeze is logged |
@@ -54,7 +54,8 @@ quality or speed much. The first real user is the kit itself (019).
    macOS and Linux. Language specifics live only in profiles.
 4. **The kit uses its own process.** It is specified, tested and frozen like any user project,
    and it installs itself.
-5. **The human owns the gates.** No kit command lets an agent approve a gate or unfreeze a test.
+5. **The human owns the gates.** No kit command lets an agent approve a gate or unfreeze a test,
+   except in chaos mode, which only the owner enables (020; ADR 0002).
 6. **Token economy by default**: a small always-loaded context, compact tool output and model
    routing by tier (Part B of the plan, 011).
 
@@ -77,14 +78,15 @@ quality or speed much. The first real user is the kit itself (019).
   about how to proceed.
 - **R000-10** No agentkit command shall offer a way for an agent to set a gate status
   (`approved`, `tests-approved`, `frozen`) or remove a file from the lock without the owner's
-  involvement as specified in 002 and 005. [manual]
+  involvement as specified in 002 and 005, except in chaos mode, which only the owner enables
+  (020). [manual]
 
 ## Public API contract
 
 The entry point is `agentkit/cli.py: main(argv: list[str] | None = None) -> int`.
 Commands and their specs: `install`, `update`, `sync` (010); `lock …` (002); `guard`, `verify`
 (003, 004); `status`, `handoff` (006); `trace`, `new-spec`, `spec-status` (005); `test` (007);
-`codemap` (008); `lint-instructions` (009); `models` (001); `pre-commit`, `check-commit-msg` (018); `version`.
+`codemap` (008); `lint-instructions` (009); `models` (001); `pre-commit`, `check-commit-msg` (018); `chaos …` (020); `version`.
 
 ## Scope (v1)
 
@@ -115,6 +117,8 @@ The lock cannot protect the kit's tests before the lock exists. So the order for
 ## Additions beyond plan.md
 
 - R000-08 (exit code convention), R000-09 and R000-10 make implicit plan intentions explicit.
+- Chaos mode (020 amendment, ADR 0002, approved by the owner on 2026-10-03): the exception in
+  principle 5, R000-10, the Owner persona, the Gate term, and the `chaos` command.
 - The bootstrap order above: the kit's first tests are approved before any code is written, then
   frozen with the kit's own lock (plan.md, Execution order).
 - Bootstrap steps 3 and 4 gained the 005 status functions and freezing shared helpers by path

@@ -24,7 +24,7 @@ tested.
 ### Process documents
 - **R011-01** `WORKFLOW.md` shall describe the phases and gates (005), each phase's steps, the
   freeze and unfreeze protocol (002), the enforcement layers and their limits, roles and tiers,
-  session handoff, and the spike and bootstrap exceptions. [manual]
+  session handoff, the spike and bootstrap exceptions, and chaos mode (R020-35). [manual]
 - **R011-02** `TOKEN-EFFICIENCY.md` shall contain the 8 sections of plan Part B and a budget
   table matching the defaults of 006, 007 and 009. [manual]
 
@@ -39,7 +39,9 @@ tested.
   inside the block:
   - the session-start instruction;
   - the hard rules (frozen files, protected files, the owner's gates, no test gaming, IDs in
-    test names);
+    test names). The protected-files rule also forbids editing the chaos log and
+    `<paths.specs>/*/reviews/` and running `chaos clear`; the gates rule says that where chaos
+    mode applies, gates go through `agentkit chaos approve` (020). Both stay within R011-06;
   - a command table;
   - token-discipline rules.
 - **R011-06** The agentkit block of the rendered AGENTS.md shall be at most 45 lines, so that
@@ -59,7 +61,10 @@ tested.
 - **R011-11** spec-reviewer, test-auditor and impl-reviewer shall not have the `edit` tool.
 - **R011-12** Each reviewer role shall end with an explicit verdict format. The test-auditor
   checks whether a plausible wrong implementation could pass, and the impl-reviewer looks for
-  test gaming. [manual]
+  test gaming. The verdict lines are those of R020-12: the test-auditor and the impl-reviewer
+  also end an unfreeze review with `verdict: unfreeze justified` or `verdict: keep frozen`, and
+  every reviewer role may end with `verdict: needs owner` for a question only the owner can
+  answer (020). [manual]
 - **R011-13** Project roles in `<paths.roles>/` shall override kit roles that have the same name.
 
 ### Skills
@@ -108,6 +113,8 @@ The files and front-matter fields listed above. There is no Python API.
 - Templates `agentkit.toml.tmpl`, `specs-README.md` and `unfreeze-log.md`.
 - The block-size cap (R011-06), and the `metadata` convention for agentkit extras (R011-14).
 - The `kickoff` and `feature` skills and the numbering rules (R011-19 to R011-21) (owner's request, 2026-10-03).
+- Chaos mode in WORKFLOW.md, AGENTS.md and the reviewer verdicts (R011-01, R011-05, R011-12; 020
+  amendment, approved by the owner on 2026-10-03).
 
 ## Open questions
 

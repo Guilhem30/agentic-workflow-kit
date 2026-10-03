@@ -30,7 +30,8 @@ Facts checked on 2026-10-03 at [plugins](https://opencode.ai/docs/plugins/),
   reason.
 - **R014-03** If the guard process cannot run or returns invalid JSON, then the plugin shall apply
   degraded mode itself (consistent with R003-27). It throws for a write tool whose path matches
-  the degraded globs, the lock, the unfreeze log, `agentkit.toml` or `.agentkit/**`, and
+  the degraded globs, the lock, the unfreeze log, `agentkit.toml`, `.agentkit/**`, the chaos
+  log (`[chaos] log`, default `chaos-log.jsonl`) or `<paths.specs>/*/reviews/**` (020), and
   otherwise allows the call and logs a warning. The degraded globs (R003-29) are rendered into
   the plugin at install time, so this works even when Python is missing.
 - **R014-04** The plugin shall set `AGENTKIT_AGENT=1` through `shell.env`.
@@ -42,7 +43,7 @@ Facts checked on 2026-10-03 at [plugins](https://opencode.ai/docs/plugins/),
 
 ### `opencode.json` (managed)
 - **R014-07** opencode.json shall set `$schema` and bash permission denials for
-  `*lock unfreeze*` and `git commit --no-verify*`.
+  `*lock unfreeze*`, `*chaos clear*` (020) and `git commit --no-verify*`.
 
 ### Derived agents (sync)
 - **R014-08** For each role, sync shall write `.opencode/agents/<name>.md` with front matter:
@@ -67,6 +68,8 @@ The generator functions are `adapters.opencode_kit` and `adapters.opencode_deriv
 
 ## Additions beyond plan.md
 
+- Chaos mode (020 amendment, ADR 0002, approved by the owner on 2026-10-03): the chaos log and
+  reviews in degraded mode, and the `chaos clear` denial (R014-03, R014-07).
 - The re-prompt limit (R014-05), the in-plugin degraded mode (R014-03), and the opencode.json bash denials.
 
 ## Open questions

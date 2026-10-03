@@ -27,8 +27,9 @@ the lock.
   - `sync --check`;
   - `codemap --check` (008).
 - **R018-04** On failure, pre-commit shall list every problem, then a line saying that
-  `--no-verify` is forbidden and that frozen tests change only through the owner's
-  `lock unfreeze`.
+  `--no-verify` is forbidden, that frozen tests change only through the owner's
+  `lock unfreeze`, and that escalations are cleared only through the owner's `chaos clear`
+  (020).
 
 ### commit-msg
 - **R018-05** `.githooks/commit-msg` shall run `agentkit check-commit-msg <file>` the same way.
@@ -79,6 +80,8 @@ The kit files are `githooks/pre-commit`, `githooks/commit-msg`, `ci/github-actio
 
 ## Additions beyond plan.md
 
+- Chaos mode (020 amendment, ADR 0002, approved by the owner on 2026-10-03): `chaos clear` in the
+  failure text (R018-04).
 - The `spec` commit type. Running `sync --check` in pre-commit (the plan had it in CI only).
 - The `--staged` checks.
 - CI providers and operating systems are chosen per project at install time and run in parallel

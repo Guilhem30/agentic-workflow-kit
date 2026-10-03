@@ -36,8 +36,10 @@ and [statusline](https://code.claude.com/docs/en/statusline):
     running `guard --format claude`;
   - a `Stop` hook running `verify --format claude`.
 - **R012-03** settings shall deny `Edit` of `**/tests.lock.json`, `**/tests.unfreeze-log.md`,
-  `**/.agentkit/**` and `**/agentkit.toml`, Bash commands matching `*lock unfreeze*`, and `Read`
-  of every profile `build_output_globs` pattern.
+  `**/.agentkit/**`, `**/agentkit.toml`, the chaos log (`[chaos] log`, default
+  `chaos-log.jsonl`) and `<paths.specs>/*/reviews/**` (020), Bash commands matching
+  `*lock unfreeze*` and `*chaos clear*`, and `Read` of every profile `build_output_globs`
+  pattern.
 - **R012-04** settings shall ask before `Edit` of `.claude/settings.json`, `.githooks/**`,
   `.github/workflows/**` and `.gitlab-ci.yml`.
 - **R012-05** settings shall configure `statusLine` to run
@@ -94,6 +96,8 @@ and `adapters/claude-code/statusline.py`. The generator functions are
 
 ## Additions beyond plan.md
 
+- Chaos mode (020 amendment, ADR 0002, approved by the owner on 2026-10-03): denials for the chaos
+  log, the stored reviews and `chaos clear` (R012-03).
 - `env.AGENTKIT_AGENT` (used by R002-20).
 - Read in the PreToolUse matcher (for R003-11).
 - The plan's `.claude/rules/` examples are left to projects, not shipped by the kit.

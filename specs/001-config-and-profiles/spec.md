@@ -30,7 +30,7 @@ provider be used, including local models.
 ### Settings
 - **R001-05** agentkit shall read these tables from `agentkit.toml`: `[kit]` (`version`,
   `profile`, `adapters`, `python`, `self_hosted`), `[ci]` (R001-20), `[paths]`, `[models]`,
-  `[models.<adapter>]`, `[budgets]`, `[guard]`, `[profile]`. Absent keys default to
+  `[models.<adapter>]`, `[budgets]`, `[guard]`, `[profile]`, `[chaos]` (read by 020). Absent keys default to
   `version = ""`, `adapters = []`, `self_hosted = false`; absent `[budgets]`, `[guard]` and
   `[profile]` are empty tables.
 - **R001-06** Where a `[paths]` key is absent, agentkit shall use these defaults:
@@ -172,6 +172,8 @@ Validating every profile key's type beyond R001-12. Unknown keys are ignored.
 
 ## Additions beyond plan.md
 
+- Chaos mode (020 amendment, ADR 0002, approved by the owner on 2026-10-03): the `[chaos]` table in
+  R001-05.
 - `AGENTKIT_ROOT` (R001-01): the launcher sets it so hooks work from any subdirectory.
 - `test_cmd_windows` / `test_one_cmd_windows`, `test_globs`, `output_filter_regex`, `ci_setup`.
 - Model routing modes `tool` / `kit` with kit-shipped tier maps, no manual model names (R001-17 to

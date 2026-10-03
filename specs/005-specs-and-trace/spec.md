@@ -40,7 +40,9 @@ Test names start with their requirement ID.
 - **R005-05** If spec NNN already exists, or the slug is invalid, then `new-spec` shall create
   nothing and exit 1.
 - **R005-06** `agentkit spec-status NNN STATUS` shall set the status, keep the rest of the file
-  unchanged, and exit 0.
+  unchanged, and exit 0. Exception: while chaos mode applies to NNN, the CLI refuses
+  `approved`, `tests-approved` and `done` in an agent environment (R020-31); `set_status()` does
+  not check this.
 - **R005-07** If STATUS is `frozen`, then `spec-status` shall refuse and exit 1, saying that
   `frozen` is set only by `lock freeze --spec` (002).
 - **R005-08** If STATUS is not a known phase, or the spec does not exist, then `spec-status`
@@ -93,6 +95,8 @@ agentkit/trace.py:
 
 ## Additions beyond plan.md
 
+- Chaos mode (020 amendment, ADR 0002, approved by the owner on 2026-10-03): the agent refusal in
+  R005-06 (R020-31).
 - The `tests-draft` phase (the plan had approved → tests approved). It marks "tests written,
   waiting for review", so that `status` can tell the owner it is their turn.
 - `new-spec` and `spec-status` commands.
@@ -105,4 +109,6 @@ agentkit/trace.py:
 
 None. (Decided 2026-10-03: agents may set `approved` and `tests-approved` through `spec-status`,
 but only when the owner said so in the conversation. This rule is in AGENTS.md (011).
-`frozen` stays reserved to `lock freeze`.)
+`frozen` stays reserved to `lock freeze`. Exception, approved by the owner on 2026-10-03: where
+chaos mode applies (020), agents pass gates only through `chaos approve`, with a reviewer's
+passing verdict and no owner involvement.)

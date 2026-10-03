@@ -82,11 +82,13 @@ unfreezes, by running a command themselves, and every unfreeze is logged.
 - **R002-20** If any of the environment variables `AGENTKIT_AGENT`, `CLAUDECODE`,
   `CODEX_SANDBOX`, `CODEX_THREAD_ID`, `OPENCODE` or `PI_CODING_AGENT` is set to a non-empty
   value, then unfreeze shall refuse, name the variable, and exit 2. `unfreeze()` performs the
-  check itself, through `human_check()`.
+  check itself, through `human_check()`. `chaos unfreeze` (R020-25) bypasses this by design; it
+  does not call `unfreeze()`.
 - **R002-21** unfreeze shall ask for confirmation on the controlling console (`/dev/tty` on
   POSIX, `CONIN$`/`CONOUT$` on Windows), never on stdin, by showing the files and requiring
   the exact answer `unfreeze <N>`, where N counts files. The default `confirm` opens the console
-  only through `open_console()`, which raises `OSError` when there is no console.
+  only through `open_console()`, which raises `OSError` when there is no console. `chaos
+  unfreeze` (R020-25) asks for no confirmation, by design.
 - **R002-22** If the console cannot be opened or the answer differs, then unfreeze shall change
   nothing and exit 1.
 - **R002-23** If a given path is not frozen (or a given directory contains no frozen file), then
@@ -95,7 +97,8 @@ unfreezes, by running a command themselves, and every unfreeze is logged.
   the unfreeze log an entry `## <UTC timestamp YYYY-MM-DDTHH:MM:SSZ> - <git user.name>`, a
   `reason: <text>` line, and one `- <path>` line per file, sorted by path. Every log entry,
   including R002-32's, is preceded by a blank line. The user is `unknown` when git
-  `user.name` is unset.
+  `user.name` is unset. An agent unfreeze in chaos mode writes a `chaos agent` entry instead
+  (R020-25).
 - **R002-25** A new unfreeze log shall start with `LOG_HEADER`, which states it is append-only. An
   existing log is appended to as it is. Earlier entries shall never be rewritten.
 
@@ -110,6 +113,15 @@ unfreezes, by running a command themselves, and every unfreeze is logged.
 - **R002-29** `lock audit` shall pass when REF does not exist (for example, the first commit). A
   lock or log missing at REF counts as empty.
 - **R002-30** `lock audit --staged` shall read the lock and the log from the git index.
+
+### Chaos mode (020 amendment, approved by the owner 2026-10-03)
+- **R002-33** When the chaos log (R020-01, or the default path when `[chaos]` is malformed,
+  R020-42) exists in the worktree, or in the index with `--staged`, `audit()` shall also run
+  `chaos.audit(cfg, base=REF, staged=staged)` and add its problems to its own. So `lock audit`,
+  pre-commit and CI (018) check the chaos log. With no chaos log, `audit()` is unchanged.
+- **R002-34** `agentkit lock freeze --spec NNN` run in an agent environment while chaos applies
+  to NNN shall exit 1, change nothing, and point to `agentkit chaos approve NNN frozen`
+  (R020-31). The `freeze()` API does not check this.
 
 ## Public API contract
 
@@ -172,6 +184,8 @@ Signing the lock cryptographically. Protection relies on git history, the hooks 
   and R002-31; `open_console()` in R002-21; the log layout, sorting and `unknown` user in
   R002-24/25; unfrozen paths in R002-26; an empty lock or log at REF in R002-29; `force`,
   `confirm`, `user` and `now` on `freeze`.
+- R002-33 and R002-34, and the notes on R002-20, R002-21 and R002-24: chaos mode (020, ADR 0002),
+  approved by the owner on 2026-10-03.
 
 ## Open questions
 

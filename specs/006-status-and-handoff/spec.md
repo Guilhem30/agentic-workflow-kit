@@ -17,7 +17,8 @@ session-start `status` is at most 10 lines. `handoff` writes the resume point in
 
 ### status
 - **R006-01** `agentkit status` shall print at most 10 lines, each at most 200 characters.
-- **R006-02** Line 1 shall be `agentkit: profile <name> | frozen files: <n> | lock: <OK | VIOLATED (<k> file(s): run `agentkit lock verify`)>`.
+- **R006-02** Line 1 shall be `agentkit: profile <name> | frozen files: <n> | lock: <OK | VIOLATED (<k> file(s): run `agentkit lock verify`)>`,
+  followed by the chaos suffix of R020-32 when a `[chaos]` table exists.
 - **R006-03** status shall print one line per spec not in phase `done` or `dropped`, in ID order:
   `spec NNN slug [phase] -> <next action>`, where the next action depends on the phase:
   - `draft`: run /spec NNN, then HUMAN approves;
@@ -25,6 +26,8 @@ session-start `status` is at most 10 lines. `handoff` writes the resume point in
   - `tests-draft`: HUMAN reviews the tests;
   - `tests-approved`: HUMAN runs /freeze NNN;
   - `frozen`: run /implement NNN.
+
+  For a spec chaos mode applies to, R020-33 replaces these actions.
 - **R006-13** For a spec in phase `frozen` with a `depends` entry (R005-20) whose spec is not
   `done`, the next action shall be `blocked by NNN[, MMM]` instead of `run /implement NNN`.
   Blocked specs are listed after the others.
@@ -33,7 +36,8 @@ session-start `status` is at most 10 lines. `handoff` writes the resume point in
 - **R006-05** When there are more active specs than fit, status shall show as many as fit and a
   line `... <n> more active spec(s)`.
 - **R006-06** When the lock is violated, the last line shall tell the agent to restore the frozen
-  files or ask the owner to unfreeze, before anything else. Otherwise, when a spec is active, the
+  files or ask the owner to unfreeze, before anything else. Otherwise, while chaos mode is
+  paused, the last line is the one of R020-34. Otherwise, when a spec is active, the
   last line is `next: <first active spec's next action>`.
 - **R006-07** When there is no active spec, status shall print a line suggesting `/spec`
   (`agentkit new-spec slug`). When no spec exists at all, the line suggests `/kickoff` instead.
@@ -70,6 +74,8 @@ agentkit/handoff.py: snapshot(cfg, spec_id, note="", next_step="", now=None) -> 
 
 ## Additions beyond plan.md
 
+- Chaos mode (020 amendment, ADR 0002, approved by the owner on 2026-10-03): the chaos suffix,
+  chaos next actions and the paused last line (R006-02, R006-03, R006-06).
 - The exact status format, the progress `**Next:**` line, and the snapshot markers.
 - Suggesting `/kickoff` in a project with no spec (R006-07) (owner's request, 2026-10-03).
 - `/spec NNN` as the draft action, skipping `dropped`, and `blocked by` (R006-03, R006-13), so

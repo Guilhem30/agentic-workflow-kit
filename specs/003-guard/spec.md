@@ -35,7 +35,10 @@ commands.
 - **R003-08** A write to a path matching `.agentkit/state/**` (or `[guard] allow_globs`) shall
   be allowed, unless it is frozen.
 - **R003-09** A write to the lock, the unfreeze log, `agentkit.toml`, `.agentkit/**` or
-  `[guard] deny_globs` shall be denied.
+  `[guard] deny_globs` shall be denied. So shall a write to the chaos log or to
+  `<paths.specs>/*/reviews/**`, whether chaos mode is on or off and whatever `[guard]
+  allow_globs` says (R020-29); with a malformed `[chaos]` table the default log path is
+  protected (R020-42).
 - **R003-10** A write to an enforcement configuration file shall be `ask`. These are
   `.claude/settings.json`, `.codex/hooks.json`, `.codex/config.toml`, `.opencode/plugins/**`,
   `opencode.json`, `.pi/**`, `.githooks/**`, `.github/workflows/**`, `.gitlab-ci.yml`,
@@ -47,7 +50,7 @@ commands.
 
 ### Shell analysis
 - **R003-13** A command containing `agentkit` and either `lock unfreeze`, or `lock freeze`
-  together with `--force`, shall be denied.
+  together with `--force`, or the consecutive tokens `chaos clear` (R020-30), shall be denied.
 - **R003-14** A `git commit`, `push`, `merge`, `rebase`, `am`, `cherry-pick` or `revert` with
   `--no-verify` shall be denied, and so shall `git commit` with `-n` in a short-flag cluster.
 - **R003-15** A git command that mentions `core.hooksPath`, and `git update-index` with
@@ -75,7 +78,8 @@ commands.
 - **R003-21** An interpreter (`python`, `python3`, `py`, `node`, `deno`, `bun`, `ruby`, `perl`,
   `php`, `pwsh`, `powershell`, `bash`, `sh`, `zsh`) run with an inline script (`-c`, `-e`,
   `-Command`, `--eval`, `-r`) that mentions a frozen path, a frozen file's basename (more than
-  4 characters), the lock or the unfreeze log shall be denied.
+  4 characters), the lock, the unfreeze log, the chaos log or a path under
+  `<paths.specs>/*/reviews/` shall be denied.
 - **R003-22** A write argument containing `*`, `?` or `[` shall be denied when the glob matches
   a frozen path.
 - **R003-23** A destructive command (`rm rmdir rd del erase Remove-Item ri mv move Move-Item mi
@@ -96,7 +100,8 @@ commands.
   shall switch to **degraded mode** (fail-closed for tests, fail-open for everything else; the
   owner's decision of 2026-10-03):
   - a WriteAction to a path matching the degraded globs (R003-29) or the lock, the unfreeze log,
-    `agentkit.toml` or `.agentkit/**` is denied, with the reason
+    `agentkit.toml`, `.agentkit/**`, the default chaos log (`chaos-log.jsonl`, or the configured
+    one when it can be read) or `<paths.specs>/*/reviews/**` is denied, with the reason
     `agentkit guard error (<message>): writes to test files are refused until the guard is fixed`;
   - every other action (other writes, reads, shell commands) is allowed, with
     `agentkit guard error (allowing): <message>` printed on stderr.
@@ -167,6 +172,8 @@ run. These are caught by end-of-turn verify and pre-commit.
   so that tools without permission config get it too.
 - The detailed shell rules R003-14 to R003-26.
 - Degraded mode R003-27 to R003-31 (owner's decision: fail-closed for test files only).
+- The chaos log, the stored reviews and `chaos clear` in R003-09, R003-13, R003-21 and R003-27
+  (020 amendment, approved by the owner on 2026-10-03).
 
 ## Open questions
 

@@ -339,9 +339,9 @@ Independent cases:
   being `done`): the impl-reviewer covers them (owner's decision).
 - Concurrent chaos commands on one repository.
 - The `/autopilot` skill (021).
-- Changes to approved specs: listed below for the owner to apply.
+- Changes to other specs: listed below, applied on 2026-10-03.
 
-## Amendments needed in other specs (approved by the owner, 2026-10-03; not yet applied)
+## Amendments to other specs (approved by the owner, 2026-10-03; applied 2026-10-03)
 
 - **000**: principle 5 and R000-10 gain "except in chaos mode, which only the owner enables
   (020)"; the glossary's Owner and Gate say the same; the command list gains `chaos` (020). A

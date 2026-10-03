@@ -7,6 +7,8 @@
 - [ ] `verify` and `status`, including `--staged` (R002-16 to R002-18) → `tests.test_002_verify`
 - [ ] `unfreeze`: agent refusal, console confirmation, log (R002-19 to R002-25) → `tests.test_002_unfreeze`
 - [ ] `restore` and `audit` (R002-26 to R002-30) → `tests.test_002_restore_audit`
+- [ ] Chaos amendment (R002-33, R002-34): needs 020's `chaos` module; tests in
+  `tests/test_002_chaos.py`, implemented after 020 (see progress)
 - [ ] CLI `lock …` subcommands and exit codes
 - [ ] Full suite; `impl-reviewer` review; `feat(002)` commit
 - [ ] Owner: bootstrap freeze of 001/002 tests and `tests/support.py`; drop the interim
