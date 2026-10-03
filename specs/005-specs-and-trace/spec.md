@@ -1,7 +1,7 @@
 ---
 id: "005"
 title: Spec folders, phases, requirement IDs and traceability
-status: approved
+status: tests-draft
 depends: ["001"]
 ---
 
