@@ -43,5 +43,6 @@ test.
 ## Resume point (2026-10-03)
 
 Chaos mode (020) is on: agents pass gates with `agentkit chaos approve` and reviewer verdicts;
-see `specs/020-chaos-mode/progress.md` for the per-spec cycle. Done: 001, 002, 003. Frozen: 020
-(status parts wait for 006). Next: 005. Open owner questions: `specs/003-guard/progress.md`.
+see `specs/020-chaos-mode/progress.md` for the per-spec cycle. Done: 001, 002, 003, 005. Frozen: 020
+(status parts wait for 006). Next: 004. Open owner questions: `specs/003-guard/progress.md`
+and `specs/005-specs-and-trace/progress.md`.

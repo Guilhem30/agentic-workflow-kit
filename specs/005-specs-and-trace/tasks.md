@@ -5,4 +5,4 @@
 - [x] T3 Templates and `new_spec` / `new-spec` (R005-04, R005-05, R005-17, R005-19) → `tests.test_005_new_spec`
 - [x] T4 Requirement IDs (R005-09 to R005-11) → `tests.test_005_reqids`
 - [x] T5 `trace` (R005-12 to R005-16) → `tests.test_005_trace`
-- [ ] T6 Full suite; `impl-reviewer`; `feat(005)`; `chaos approve 005 done`
+- [x] T6 Full suite; `impl-reviewer`; `feat(005)`; `chaos approve 005 done`
