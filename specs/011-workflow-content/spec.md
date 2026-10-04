@@ -1,7 +1,7 @@
 ---
 id: "011"
 title: Workflow content (process docs, templates, roles, skills)
-status: tests-approved
+status: frozen
 depends: ["005", "009"]
 ---
 

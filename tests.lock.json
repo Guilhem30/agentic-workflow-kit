@@ -213,6 +213,18 @@
       "sha256": "66e81fd830d9941ed70b5f9ed3a619e389696989f80058b030ff85a7c13df7a8",
       "spec": "009"
     },
+    "tests/test_011_roles.py": {
+      "sha256": "b3682ee381df544b2c12b8eb0599ea4672b2f2996809649d845f62037e0e4e6b",
+      "spec": "011"
+    },
+    "tests/test_011_skills.py": {
+      "sha256": "779df8fe3aa4665fdb60e85a279e4b09976b02e3dbfd679a7aba080ee6f4322e",
+      "spec": "011"
+    },
+    "tests/test_011_templates.py": {
+      "sha256": "eedc04f09245cd70137b66290d8c0cdc2eb34cbc3bcdc3c5d071b912c0136604",
+      "spec": "011"
+    },
     "tests/test_020_approve.py": {
       "sha256": "5c536925fc5685e9f4577a751fc0bf308dc59f8bd01ccfbe301987cc12f13f4b",
       "spec": "020"
