@@ -78,7 +78,9 @@ def _scalar(raw: str):
 
 def front_matter(text: str) -> dict:
     """Parse the front matter between the leading '---' lines: top-level `key: value`, flow
-    lists, quoted strings, booleans, and one level of nested mappings or block lists."""
+    lists, quoted strings, booleans, and one level of nested mappings or block lists. Kit
+    content must stay within this subset: block scalars (`>`, `|`) are rejected, and an inline
+    `# comment` is read as part of the value."""
     if not text.startswith("---\n"):
         raise FrontMatterError("no front matter")
     end = text.find("\n---\n", 3)

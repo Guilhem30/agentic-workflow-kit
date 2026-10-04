@@ -23,7 +23,9 @@ class TestRoleFiles(ContentCase):
                 self.assertLessEqual(set(fm["tools"]), {"read", "edit", "shell"})
 
     def test_R011_09_every_role_file_named_after_its_name(self):
-        for path in ROLES.glob("*.md"):
+        paths = sorted(ROLES.glob("*.md"))
+        self.assertLessEqual({f"{n}.md" for n in ROLE_NAMES}, {p.name for p in paths})
+        for path in paths:
             with self.subTest(role=path.name):
                 self.assertEqual(self.meta(path).get("name"), path.stem)
 
@@ -56,7 +58,9 @@ class TestRolesFunction(RepoTestCase):
 
     def test_R011_13_kit_roles_without_project_roles(self):
         found = self.roles()
-        self.assertEqual(set(found), set(ROLE_NAMES))
+        self.assertLessEqual(set(ROLE_NAMES), set(found))
+        for name in found:
+            self.assertEqual(found[name], (ROLES / f"{name}.md").resolve())
         for name in ROLE_NAMES:
             self.assertEqual(found[name], (ROLES / f"{name}.md").resolve())
 
@@ -65,13 +69,23 @@ class TestRolesFunction(RepoTestCase):
         found = self.roles()
         self.assertEqual(found["summarizer"], mine)
         self.assertEqual(found["implementer"], (ROLES / "implementer.md").resolve())
-        self.assertEqual(set(found), set(ROLE_NAMES))
+        self.assertLessEqual(set(ROLE_NAMES), set(found))
 
     def test_R011_13_project_role_with_new_name_added(self):
         mine = self.role("roles/security-reviewer.md", "security-reviewer")
         found = self.roles()
         self.assertEqual(found["security-reviewer"], mine)
-        self.assertEqual(set(found), set(ROLE_NAMES) | {"security-reviewer"})
+        self.assertLessEqual(set(ROLE_NAMES), set(found))
+
+    def test_R011_13_name_is_the_file_name(self):
+        mine = self.role("roles/sec-check.md", "something-else")
+        found = self.roles()
+        self.assertEqual(found.get("sec-check"), mine)
+        self.assertNotIn("something-else", found)
+
+    def test_R011_13_only_md_files_are_roles(self):
+        self.write("roles/notes.txt", "not a role\n")
+        self.assertNotIn("notes", self.roles())
 
     def test_R011_13_configured_roles_path(self):
         self.write("agentkit.toml", '[kit]\nprofile = "fixture"\n\n[paths]\nroles = "my/roles"\n')

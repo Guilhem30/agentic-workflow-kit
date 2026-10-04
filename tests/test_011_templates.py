@@ -71,6 +71,12 @@ class TestAgentsTemplate(ContentCase):
         self.assertIn("frozen", block.lower())
         self.assertIn("chaos approve", block)
 
+    def test_R011_05_hard_rules_gates_honest_tests_and_ids(self):
+        block = self.block(self.agents_md(DEFAULT_CTX)).lower()
+        self.assertIn("owner", block, "the owner's gates")
+        self.assertRegex(block, r"honest|gaming|special-cas", "no test gaming")
+        self.assertIn("test name", block, "requirement IDs in test names")
+
     def test_R011_05_command_table_uses_launcher(self):
         block = self.block(self.agents_md(ODD_CTX))
         rows = [ln for ln in block.splitlines() if ln.strip().startswith("|")]
@@ -105,6 +111,8 @@ class TestPlaceholders(ContentCase):
                     self.assertNotIn("{{", render(text, ctx))
 
     def test_R011_07_other_template_files_use_install_keys(self):
+        for name in INSTALL_TEMPLATES:
+            self.read(TEMPLATES / name)
         for path in TEMPLATES.rglob("*"):
             if path.is_file() and path.name not in SPEC_FOLDER_TEMPLATES:
                 with self.subTest(path=path.name):

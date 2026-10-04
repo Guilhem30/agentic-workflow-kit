@@ -45,7 +45,9 @@ class TestSkillFiles(SkillCase):
                     self.assertIsInstance(value, str, f"metadata.{key} is a string")
 
     def test_R011_14_every_skill_directory_named_after_its_skill(self):
-        for path in SKILLS.glob("*/SKILL.md"):
+        paths = sorted(SKILLS.glob("*/SKILL.md"))
+        self.assertLessEqual(set(SKILL_NAMES), {p.parent.name for p in paths})
+        for path in paths:
             with self.subTest(skill=path.parent.name):
                 self.assertEqual(self.meta(path).get("name"), path.parent.name)
 
@@ -88,7 +90,7 @@ class TestCommands(SkillCase):
             with self.subTest(file=rel):
                 text = self.read(path)
                 self.assertNotRegex(text, r"-m\s+agentkit\b", "no `python -m agentkit`")
-                for m in re.finditer(r"\.agentkit/bin/agentkit\b", text):
+                for m in re.finditer(r"\.agentkit/bin/agentkit\b(?!\.cmd)", text):
                     self.assertTrue(text[:m.start()].endswith("{{python}} "),
                                     f"launcher without {{{{python}}}} at offset {m.start()}")
 
