@@ -36,6 +36,13 @@ def package_sources() -> list[Path]:
     return sorted(p for p in PACKAGE.rglob("*.py") if "__pycache__" not in p.parts)
 
 
+def tooling_sources() -> list[Path]:
+    """Every Python file the kit ships to run: the package plus the scripts under adapters/
+    (copied into .agentkit/adapters by install, run by the agent tools)."""
+    scripts = (KIT_ROOT / "adapters").rglob("*.py") if (KIT_ROOT / "adapters").is_dir() else []
+    return package_sources() + sorted(p for p in scripts if "__pycache__" not in p.parts)
+
+
 def parse(path: Path, feature_version: tuple[int, int] | None = None) -> ast.Module:
     source = path.read_text(encoding="utf-8")
     if feature_version is None:

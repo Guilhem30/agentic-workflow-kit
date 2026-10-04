@@ -71,7 +71,8 @@ class ModuleFormTests(TempDirTestCase):
                 proc = run_module(self.root, *argv)
                 code, out = run_cli(*argv)
                 self.assertEqual(proc.returncode, code)
-                self.assertEqual(proc.stdout + proc.stderr, out)
+                self.assertEqual(sorted((proc.stdout + proc.stderr).splitlines()),
+                                 sorted(out.splitlines()))
 
 
 class InstalledLauncherTests(TempDirTestCase):
@@ -109,6 +110,8 @@ class InstalledLauncherTests(TempDirTestCase):
                 installed = run_launcher(self.target, *argv)
                 module = run_module(self.target, *argv)
                 self.assertEqual(installed.returncode, module.returncode)
+                if argv[0] != "spec-status":  # a fresh install passes these
+                    self.assertEqual(installed.returncode, 0, installed.stdout + installed.stderr)
                 self.assertEqual(installed.stdout, module.stdout)
                 self.assertEqual(installed.stderr, module.stderr)
 

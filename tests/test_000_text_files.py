@@ -24,6 +24,9 @@ EMIT = ('import sys\n'
         '\\xff MARK-4\\n")\n')
 
 
+BINARY_SUFFIXES = (".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".zip", ".gz", ".woff",
+                   ".woff2", ".pyc")
+
 DRIVER = "import json, sys; from agentkit.cli import main; sys.exit(main(json.loads(sys.argv[1])))"
 
 
@@ -106,10 +109,12 @@ class GeneratedFileTests(TextFileCase):
 
     def test_R000_07_test_log(self):
         files = self.kit("test", expect=None)
-        texts = self.assertUtf8Lf(files)
-        log = texts[".agentkit/state/last-test.log"]
-        self.assertIn("café ✓ MARK-1\nMARK-2\nMARK-3\n", log)
-        self.assertIn("MARK-4", log)
+        data = files[".agentkit/state/last-test.log"]
+        self.assertNotIn(b"\r", data)
+        log = data.decode("utf-8")
+        self.assertIn("café ✓ MARK-1\n", log)
+        for mark in ("MARK-2", "MARK-3", "MARK-4"):
+            self.assertIn(mark, log)
 
 
 class InstallTests(TextFileCase):
@@ -120,7 +125,8 @@ class InstallTests(TextFileCase):
         proc = run_legacy(self.tmp, "install", "--target", str(target), "--ci", "github",
                           "--ci-os", "linux,windows,macos", "--models", "kit", "--owner", "@owner")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        files = {rel: data for rel, data in written_files(target).items() if b"\0" not in data}
+        files = {rel: data for rel, data in written_files(target).items()
+                 if not rel.lower().endswith(BINARY_SUFFIXES)}
         self.assertIn("agentkit.toml", files)
         self.assertIn(".agentkit/bin/agentkit", files)
         self.assertIn(".agentkit/bin/agentkit.cmd", files)

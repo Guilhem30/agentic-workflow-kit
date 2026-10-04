@@ -10,7 +10,7 @@ import unittest
 from unittest import mock
 
 from tests.process_fixtures import (CLAUDE_WRITE, COMMANDS, KIT_ROOT, PY, clean_env,
-                                    imported_modules, package_sources, parse, run_python,
+                                    imported_modules, package_sources, parse, run_python, tooling_sources,
                                     stdin_patch)
 from tests.support import FIXTURE_PROFILE, RepoTestCase, run_cli
 
@@ -20,7 +20,7 @@ NETWORK_MODULES = ("socket", "ssl", "http", "urllib.request", "urllib.response",
                    "smtplib", "poplib", "imaplib", "nntplib", "telnetlib", "xmlrpc",
                    "socketserver", "webbrowser")
 
-GIT_NETWORK = {"fetch", "pull", "push", "clone", "ls-remote"}
+GIT_NETWORK = {"fetch", "pull", "push", "clone", "ls-remote", "submodule", "lfs"}
 NETWORK_PROGRAMS = {"curl", "wget", "ssh", "scp", "nc", "pip", "pip3"}
 
 # Imports every module of the package with site-packages disabled, then runs one command.
@@ -49,7 +49,7 @@ class StandardLibraryOnlyTests(unittest.TestCase):
 
     def test_R000_01_imports_only_the_standard_library(self):
         bad = []
-        for path in package_sources():
+        for path in tooling_sources():
             for name, line in imported_modules(parse(path)):
                 if name.split(".")[0] not in ALLOWED_TOP:
                     bad.append(f"{path.relative_to(KIT_ROOT).as_posix()}:{line}: {name}")
@@ -57,7 +57,7 @@ class StandardLibraryOnlyTests(unittest.TestCase):
 
     def test_R000_01_syntax_is_python_3_11(self):
         bad = []
-        for path in package_sources():
+        for path in tooling_sources():
             try:
                 parse(path, feature_version=(3, 11))
             except SyntaxError as exc:
@@ -88,7 +88,7 @@ class NoNetworkSourceTests(unittest.TestCase):
 
     def test_R000_03_no_network_module_is_imported(self):
         bad = []
-        for path in package_sources():
+        for path in tooling_sources():
             for name, line in imported_modules(parse(path)):
                 if any(name == m or name.startswith(m + ".") for m in NETWORK_MODULES):
                     bad.append(f"{path.relative_to(KIT_ROOT).as_posix()}:{line}: {name}")
@@ -153,6 +153,8 @@ class NoNetworkAtRunTimeTests(RepoTestCase):
             while rest and rest[0].startswith("-"):  # global options; -C and -c take a value
                 rest = rest[2:] if rest[0] in ("-c", "-C") else rest[1:]
             if rest and rest[0] in GIT_NETWORK:
+                return True
+            if rest[:2] == ["remote", "update"]:
                 return True
         return False
 
