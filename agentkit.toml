@@ -25,6 +25,9 @@ codemap = "docs/CODEMAP.md"
 skills = ".agents/skills"
 roles = "roles"
 
+[codemap]
+symbol_regexes = ['^(?:def|class) (?P<name>[A-Za-z]\w*)']
+
 [models]
 mode = "kit"
 

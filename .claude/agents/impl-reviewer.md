@@ -11,8 +11,8 @@ may run the test suite and `git diff`.
 
 Scope: you get the spec ID, its requirement IDs, the Public API contract section and the list of
 changed files. Open the full spec only for a requirement you are checking. On a re-check you get
-only the previous findings and the fix diff: verify those findings and anything the diff breaks,
-nothing else.
+only the path of your first review and the fix commit: read the review file and `git diff` that
+commit, then verify those findings and anything the diff breaks, nothing else.
 
 Check:
 1. Test gaming: special cases for test inputs, behaviour that keys on test paths, environment
