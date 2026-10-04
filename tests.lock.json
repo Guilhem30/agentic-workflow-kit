@@ -6,9 +6,97 @@
       "sha256": "b973c1586f5ca2c52a47392f499a2c3c3af0a5d4621789f8e697a690f0ae4fc5",
       "spec": "020"
     },
+    "tests/fixtures/payloads/claude/allowed-edit.json": {
+      "sha256": "a0142a5f2f521496157524e22ea8f0455fcdb1e45cb6c0995ca1acbf55542f1d",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/claude/allowed-readonly-shell.json": {
+      "sha256": "95ebfa8a3126cb86136821240fb1959550007ce2323cf158e9c4cae1b1555e2a",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/claude/denied-frozen-edit.json": {
+      "sha256": "9badc9562872fd713e91849b34ef59c9bbfbd83da191a8799aed3b68684ceae3",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/claude/denied-shell-write.json": {
+      "sha256": "eb8310d8ba7b204c1c71b94839c463fe9d3857e2a8eccd74868b35547a82fd44",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/codex/allowed-edit.json": {
+      "sha256": "2584e4b147eca9eca8784d6492bd8511de706a6fbd519136bfd6bc6dacc94d3c",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/codex/allowed-readonly-shell.json": {
+      "sha256": "ee9036beca26b886512cfe03d5dd2acaa9ec44e24c5f567c10f03edb45f87ce6",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/codex/apply-patch-frozen.json": {
+      "sha256": "d2fafad631a71b0fbb4880ecf552aef406a14475a6cc67142c16aeaaeb1514cb",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/codex/denied-frozen-edit.json": {
+      "sha256": "6d42910fb749a4206c8388878303ff8f25f43567eee94c153d96d30e9450bacb",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/codex/denied-shell-write.json": {
+      "sha256": "29b31c22532748d34e2cdfd4b3e294a67ca8d4b85d0c5d6900fe94e29507fef3",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/dsh/allowed-edit.json": {
+      "sha256": "2584e4b147eca9eca8784d6492bd8511de706a6fbd519136bfd6bc6dacc94d3c",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/dsh/allowed-readonly-shell.json": {
+      "sha256": "59e5d78cbd87c10d38c845f1c6fae34d6dd1c68f94c8c988ad73a86319456351",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/dsh/denied-frozen-edit.json": {
+      "sha256": "c51c6ae023834b8d571b800042c7709874cce96ec83b05dbb887bfdf07b1d319",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/dsh/denied-shell-write.json": {
+      "sha256": "0f5c6644680e186292e79a63498b54fa29c6cee4739dbc81ffe18771e1d4c396",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/opencode/allowed-edit.json": {
+      "sha256": "c932ef7b5049dc5fd38d4fb12606bcea86981978d0b8cb0a279a079fa487ae74",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/opencode/allowed-readonly-shell.json": {
+      "sha256": "312e56f67f484f3e4348b5492f7bf37fbfdc6945bcc2fc1da9966ee776ef7872",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/opencode/denied-frozen-edit.json": {
+      "sha256": "64e5bb9efb58d341d8ebfa93c6e8c0c59e8aa791c5d61485e510029c2c2665d7",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/opencode/denied-shell-write.json": {
+      "sha256": "efd4fc11e09ad9f6b863d0303503d4cf6fd765da3b80a767e97062f16574a9bb",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/pi/allowed-edit.json": {
+      "sha256": "4cc064bb1c49d64b3c96298cda6f7bdeb38ae7404dda5d4368a655257c987d39",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/pi/allowed-readonly-shell.json": {
+      "sha256": "f241b813b37e0a8f7248fe47bc986e07ffeb3c943d344acd0bd8ad9c21e53f51",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/pi/denied-frozen-edit.json": {
+      "sha256": "ff9923b95fec445e1474f165f140a756d233e96e341df57517f68d216101722a",
+      "spec": "004"
+    },
+    "tests/fixtures/payloads/pi/denied-shell-write.json": {
+      "sha256": "079387c320591e9866b87d11b38e1783fd300a15895a07d54ee8bee8cd629326",
+      "spec": "004"
+    },
     "tests/guard_fixtures.py": {
       "sha256": "3033054ce6fa93c248410580341b96eb16464917387131ea0cba431a79617258",
       "spec": "003"
+    },
+    "tests/hook_fixtures.py": {
+      "sha256": "681578c29ea6fa5dd28fa7fcf7288a42bb4a7422514809092fc7fef6be2e0357",
+      "spec": "004"
     },
     "tests/spec_fixtures.py": {
       "sha256": "251779d3d41dde23c3ba78f0ba8079db0e2832f0f484bae172c178340aab3f03",
@@ -64,6 +152,26 @@
     "tests/test_003_shell.py": {
       "sha256": "50052490062cecd74bdb9ce8e66ea108f745373664e8646e38eb6ba927fe360e",
       "spec": "003"
+    },
+    "tests/test_004_cli.py": {
+      "sha256": "910b9a85e199e8b9f97c720060730c119e1bf5233aceee502eec2a62ef40246a",
+      "spec": "004"
+    },
+    "tests/test_004_conformance.py": {
+      "sha256": "ab4b93cde355154e89c407c12ace2f1d43d40ebba92d8cbb054cdb03d6fcb6f8",
+      "spec": "004"
+    },
+    "tests/test_004_mapping.py": {
+      "sha256": "e2ddf42edc718306cebdb52cebc487249f3941c4391365c7f6579674c3e539bd",
+      "spec": "004"
+    },
+    "tests/test_004_responses.py": {
+      "sha256": "dcb39aa9b5ccb1e8f3899e1fa8e2427926735dfe19f92188d6fb4e520914833a",
+      "spec": "004"
+    },
+    "tests/test_004_verify_status.py": {
+      "sha256": "107cf1b71ebaf44f718f2aa1a39fc6ee2b7532bff2568d3f019f84a360bc298e",
+      "spec": "004"
     },
     "tests/test_005_folders.py": {
       "sha256": "f275d2511a5cec73215b6bc4e5c8e0982e2fd67012dda0efdfc0bb590624a56a",

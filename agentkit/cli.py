@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -214,18 +215,111 @@ def cmd_trace(args) -> int:
     return code
 
 
+_GUARD_ALLOWING = "agentkit guard error (allowing): "
+_VERIFY_HINT = "hint: restore with `agentkit lock restore`, or ask the owner to unfreeze"
+
+
+def _read_payload() -> tuple[dict, str | None]:
+    """One JSON object from stdin, as UTF-8 (R004-02). A bad payload gives ({}, why)."""
+    try:
+        stream = getattr(sys.stdin, "buffer", None)
+        raw = stream.read() if stream is not None else sys.stdin.read().encode("utf-8")
+        text = raw.decode("utf-8-sig")
+    except (OSError, ValueError, AttributeError) as exc:
+        return {}, f"cannot read the hook payload ({exc})"
+    if not text.strip():
+        return {}, "empty hook payload"
+    try:
+        payload = json.loads(text)
+    except (ValueError, RecursionError) as exc:
+        return {}, f"the hook payload is not JSON ({exc})"
+    if not isinstance(payload, dict):
+        return {}, f"the hook payload is not a JSON object (got {type(payload).__name__})"
+    return payload, None
+
+
+def _emit(response, stderr: bool = True) -> int:
+    """Print a hook Response with LF endings (R000-07). `stderr=False` when the guard has
+    already printed the message itself (003 degraded mode)."""
+    if stderr and response.stderr:
+        sys.stderr.write(response.stderr)
+        sys.stderr.flush()
+    if response.stdout:
+        buffer = getattr(sys.stdout, "buffer", None)
+        if buffer is not None:
+            sys.stdout.flush()
+            buffer.write(response.stdout.encode("utf-8"))
+            buffer.flush()
+        else:
+            sys.stdout.write(response.stdout)
+            sys.stdout.flush()
+    return response.code
+
+
 def cmd_guard(args) -> int:
-    raise NotImplementedError("R004-02")
+    from agentkit import guard
+    from agentkit.payloads import get_format
+    fmt = get_format(args.format)
+    payload, problem = _read_payload()
+    cwd = None
+    if problem is None:
+        try:
+            actions, cwd = fmt.parse(payload)
+        except Exception as exc:  # noqa: BLE001 - a payload we cannot read is allowed (R003-31)
+            problem = f"cannot read the hook payload ({type(exc).__name__}: {exc})"
+    if problem is not None:
+        decision = guard.Decision(guard.ALLOW, [_GUARD_ALLOWING + problem], degraded=True)
+        return _emit(fmt.pre_response(decision))
+    start = Path(cwd) if cwd and Path(cwd).is_dir() else None
+    try:
+        cfg = load_config(start)
+    except ConfigError:
+        cfg = None  # 003 runs degraded
+    decision = guard.evaluate(cfg, actions, cwd=cwd)
+    # A degraded allow has already printed its warning (R003-31).
+    return _emit(fmt.pre_response(decision), stderr=not decision.degraded)
+
+
+def _verify_problems(lock) -> list[str]:
+    """Each violated file, plus the hint (R004-15)."""
+    problems = [f"{v.kind} {v.path}" for v in lock.verify(load_config())]
+    if problems:
+        problems.append(_VERIFY_HINT)
+    return problems
 
 
 def cmd_verify(args) -> int:
-    raise NotImplementedError("R004-15")
+    from agentkit import lock
+    payload = {}
+    fmt = None
+    if args.format is not None:
+        from agentkit.payloads import get_format
+        fmt = get_format(args.format)
+        payload, _ = _read_payload()
+    if fmt is not None:
+        # A hook must get its JSON and exit 0 (R004-16): errors become problems.
+        try:
+            problems = _verify_problems(lock)
+        except (ConfigError, LockError) as exc:
+            problems = [f"agentkit: {exc}"]
+        return _emit(fmt.stop_response(payload, problems))
+    problems = _verify_problems(lock)
+    for line in problems or ["verify: OK"]:
+        print(line)
+    return 1 if problems else 0
 
 
 def cmd_status(args) -> int:
     from agentkit import status
     if args.format is not None:
-        raise NotImplementedError("R004-20")
+        from agentkit.payloads import get_format
+        fmt = get_format(args.format)
+        _read_payload()
+        try:
+            text = "\n".join(status.status_lines(load_config()))
+        except (ConfigError, LockError) as exc:  # a session start must not fail (R004-20)
+            text = f"agentkit: {exc}"
+        return _emit(fmt.session_response(text))
     for line in status.status_lines(load_config()):
         print(line)
     return 0
