@@ -17,7 +17,8 @@ live state; on 2026-10-04 it was:
 |---|---|
 | `done` | 001–009 (config, lock, guard, hook dialects, trace, status/handoff, test runner, codemap, lint-instructions), 011 (workflow content) |
 | `frozen`, being implemented | 010 (install, update, sync), 020 (chaos mode; its code is in, it closes now that 011 is done) |
-| `approved`, tests not written | 000, 012–016 (adapters), 017 (profiles), 018 (git hooks and CI), 019 (self-hosting and docs), 021 (`/autopilot`) |
+| `tests-draft`, waiting for owner review | 000 (vision and constitution) |
+| `approved`, tests not written | 012–016 (adapters), 017 (profiles), 018 (git hooks and CI), 019 (self-hosting and docs), 021 (`/autopilot`) |
 | `draft` | 022 (owner decisions), 023 (`/fix` path) |
 
 There is **no install command yet**: `install`, `update`, `sync` (010) and `autopilot` (021)
