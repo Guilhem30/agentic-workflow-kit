@@ -346,34 +346,7 @@ Independent cases:
 
 Approved by the owner and applied on 2026-10-03; listed in ADR 0002's appendix.
 
-## Additions beyond plan.md
+## Additions and open questions
 
-The whole spec is the owner's idea of 2026-10-03, not in plan.md. Design choices to approve:
-- One JSON Lines log for approvals, rejections, unfreezes, escalations and clears, rather than a
-  log plus separate escalation files, so "open" and "in a row" are computed from one file.
-- Reviews copied into `specs/NNN-*/reviews/` with their hash in the log.
-- `frozen` takes no review of its own: the test-auditor's `ready to freeze` verdict on
-  `tests-approved` is the freeze verdict (R020-09 `based_on`).
-- `tests-approved` requires a clean `trace` (R020-17).
-- Spec 000 is simply outside chaos mode (R020-05); changes to it escalate through
-  `escalate_globs`.
-- An agent unfreeze needs both the test-auditor and the impl-reviewer (owner's decision).
-- A reviewer escalates with `verdict: needs owner` (R020-43): an agent approves a spec with open
-  questions unless the reviewer finds one only the owner can answer (owner's decision).
-- An agent unfreeze is limited to one spec's tests, from `frozen` or `done`, and sends that spec
-  back to `tests-draft`, so the changed tests are audited and frozen again.
-- The pause is global, not per spec.
-- The base commit for the `protected` and `audit` checks is the newest log record's commit; a
-  vanished base escalates (`base`).
-- `spec-status` and `lock freeze --spec` refuse gate moves by agents where chaos applies (R020-31).
-- Requires git for the mutating commands (R020-06).
-
-## Open questions
-
-None. Decided by the owner on 2026-10-03:
-1. An agent unfreeze needs both the test-auditor and the impl-reviewer (R020-12, R020-23).
-2. An agent approves a spec with open questions unless the reviewer judges one critical; the
-   reviewer then escalates with `verdict: needs owner` (R020-43).
-3. Any edit of `AGENTS.md` or `CLAUDE.md` escalates (R020-01 default `escalate_globs`).
-4. `done` needs no mechanical check beyond the critical checks; the impl-reviewer runs the tests.
-5. ADR 0002 records the principle 5 change (`docs/adr/0002-chaos-mode.md`).
+None open. The design choices and the owner's decisions of 2026-10-03 are in the appendix of
+[ADR 0002](../../docs/adr/0002-chaos-mode.md).

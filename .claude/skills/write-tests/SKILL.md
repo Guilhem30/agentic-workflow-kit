@@ -26,9 +26,8 @@ implementation: precise and complete, but not over-specified.
 6. **Audit.** Run the `test-auditor` role as a subagent (or apply `roles/test-auditor.md`
    inline). Fix its findings. If a test exposes a gap in the spec, propose the spec change to
    the owner first.
-   At most two passes: the first is a full review; the second gets only the saved first
-   review (a file path) and the fix commit, not a pasted copy. A third pass needs a new
-   blocking finding in the second.
+   Audit at most twice: a full audit, then a re-check given only the saved first audit (its
+   path) and the fix commit. A third audit needs a new blocking finding in the re-check.
 7. Set `status: tests-draft`, update `progress.md`, and hand over: tests per requirement, the
    audit verdict and any spec changes. Ask the owner to review.
 8. **On approval in this conversation:** set `status: tests-approved` and commit

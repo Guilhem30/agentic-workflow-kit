@@ -79,3 +79,71 @@ Moved here from the specs on 2026-10-03 to keep them short. Each target spec alr
   WORKFLOW.md covers `/autopilot` (R021-21, R021-25).
 - **012**: R012-07's skill list in the CLAUDE.md block gains `/autopilot` (owner only, chaos
   mode), within its 20-line cap.
+
+## Appendix: design choices and owner decisions
+
+Moved here from the specs on 2026-10-04 so that implement sessions load only requirements,
+contract and examples. The requirements already encode every choice below.
+
+### 020: additions beyond plan.md
+
+The whole spec is the owner's idea of 2026-10-03, not in plan.md. Design choices to approve:
+- One JSON Lines log for approvals, rejections, unfreezes, escalations and clears, rather than a
+  log plus separate escalation files, so "open" and "in a row" are computed from one file.
+- Reviews copied into `specs/NNN-*/reviews/` with their hash in the log.
+- `frozen` takes no review of its own: the test-auditor's `ready to freeze` verdict on
+  `tests-approved` is the freeze verdict (R020-09 `based_on`).
+- `tests-approved` requires a clean `trace` (R020-17).
+- Spec 000 is simply outside chaos mode (R020-05); changes to it escalate through
+  `escalate_globs`.
+- An agent unfreeze needs both the test-auditor and the impl-reviewer (owner's decision).
+- A reviewer escalates with `verdict: needs owner` (R020-43): an agent approves a spec with open
+  questions unless the reviewer finds one only the owner can answer (owner's decision).
+- An agent unfreeze is limited to one spec's tests, from `frozen` or `done`, and sends that spec
+  back to `tests-draft`, so the changed tests are audited and frozen again.
+- The pause is global, not per spec.
+- The base commit for the `protected` and `audit` checks is the newest log record's commit; a
+  vanished base escalates (`base`).
+- `spec-status` and `lock freeze --spec` refuse gate moves by agents where chaos applies (R020-31).
+- Requires git for the mutating commands (R020-06).
+
+### 020: open questions (settled)
+
+None. Decided by the owner on 2026-10-03:
+1. An agent unfreeze needs both the test-auditor and the impl-reviewer (R020-12, R020-23).
+2. An agent approves a spec with open questions unless the reviewer judges one critical; the
+   reviewer then escalates with `verdict: needs owner` (R020-43).
+3. Any edit of `AGENTS.md` or `CLAUDE.md` escalates (R020-01 default `escalate_globs`).
+4. `done` needs no mechanical check beyond the critical checks; the impl-reviewer runs the tests.
+5. ADR 0002 records the principle 5 change (`docs/adr/0002-chaos-mode.md`).
+
+### 021: additions beyond plan.md
+
+The whole spec is the owner's idea of 2026-10-03, not in plan.md. Design choices to approve:
+- A read-only `agentkit autopilot NNN` command decides the next step, the findings to fix and
+  the last outcome, so the order of gates is code, not the agent's judgement, and a run resumes
+  from files. Its `blocked:` output and check order (R021-03, R021-06).
+- The `review-tests` step, where the test-writer runs only to fix findings.
+- Writers and reviewers run as subagents; the main session keeps only verdicts and paths.
+- Review files are written to a gitignored `.autopilot/` folder (Claude Code denies edits under
+  `.agentkit/`) before `chaos approve` copies them.
+- `/autopilot` is owner-only (`agentkit-user-only`), like `/freeze`.
+- One commit per gate, with `progress.md` in it; stop on any outcome that is not a pass or a
+  fresh reject (R021-13, R021-16).
+- Dependencies first: the chain order and the working spec (owner's decision, 2026-10-03). The
+  phases along the chain are read before chaos is checked on the working spec, since the phase
+  picks it (R021-03 items 7 and 8, unlike R020-38).
+- At most one agent unfreeze per run (owner's decision, 2026-10-03; R021-18).
+- The full suite runs after the impl-reviewer passes and before `chaos approve WWW done`.
+- One retry of a reviewer whose verdict line is invalid (R021-12).
+- A dependency outside chaos mode stops the run; the owner finishes it or lists it.
+- Without subagents, one gate per session (R021-19).
+- Tier standard/medium for the orchestrator: the strong-tier work is in the subagents.
+
+### 021: open questions (settled)
+
+None. Decided by the owner on 2026-10-03:
+1. One agent unfreeze per run (R021-18). An unfreeze lets the test be modified, audited and
+   frozen again.
+2. Dependencies under chaos mode are run first (the chain, R021-01, R021-03).
+3. One commit after each gate (R021-15).

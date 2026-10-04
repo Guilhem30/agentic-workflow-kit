@@ -99,12 +99,12 @@ layer the chaos gates lean on.
 | # | State | Note |
 |---|---|---|
 | 1–4, 6, 10 | Done | In `.agents/skills/` and `roles/`; impl-reviewer runs on sonnet, test-auditor on opus |
-| 5 | Done, one gap | `specs/020-chaos-mode/progress.md` has a stale snapshot ("Next: spec 003 …"). Refresh it with `agentkit handoff 020` |
+| 5 | Done | 020's stale snapshot refreshed 2026-10-04; its guard and status tasks ticked (done with 003, 006) |
 | 7 | Done | AGENTS.md now uses `agentkit test` instead of `unittest \| tail` |
 | 8 | Bootstrap | `scripts/session_start.py` prints `agentkit status` and the resume point; 012 wires it for real |
 | 9 | Mostly moot | `agentkit test` already caps output. A Claude Code PostToolUse hook cannot rewrite Bash output |
 | 11 | Partial | "Bootstrap state" cut to 3 lines; the always-loaded estimate is ~1.6k tokens (budget 3k) |
-| 12 | Partial | 020 (379 lines) and 021 (351) are still 2× any other spec |
+| 12 | Done as far as useful | See item 17 |
 | 13 | Partial | The allowlist lacks `agentkit test`, `status`, `codemap` and `lint-instructions`, which the skills now call. Owner edit (`.claude/settings.json` is in `ask`) |
 
 ## New measures (2026-10-04)
@@ -119,16 +119,15 @@ layer the chaos gates lean on.
 15. **Allowlist the compact commands (owner).** Add `Bash(python3 -m agentkit test:*)`,
     `status:*`, `codemap:*` and `lint-instructions:*` to `.claude/settings.json`. This saves a
     permission round-trip on every implement loop.
-16. **Unblock `status`'s "next" line.** It points at `/write-tests 000`, but 000 is the vision
-    spec and most of its requirements are tested through other specs or `[manual]`. The owner
-    decides whether 000 goes `done` (or `dropped` from the active list), so the first line a
-    session reads names real work (022 or 010).
-17. **Split 020/021 for real (owner, spec edit).** Move rationale, examples and the settled
-    "Open questions" to ADR 0002. Requirements and contract stay word for word, so frozen tests
-    are unaffected. Target ≤ 200 lines each.
-18. **Re-check from the saved review.** A second review pass gets
-    `specs/NNN-*/reviews/<n>-*.md` and `git diff <fix>`, not a pasted findings list (one line in
-    each reviewer role, then `bootstrap_sync`).
+16. **`status` says `/write-tests 000`: that is real work.** R000-03, -04, -07, -08 and -09
+    are testable and untraced (`agentkit trace --spec 000`). Cross-cutting tests (no network,
+    LF output, exit codes) are cheap and guard every later spec. Run it before 010.
+17. **Done 2026-10-04 (partial split of 020/021):** their settled "Additions" and "Open questions"
+    moved to ADR 0002's appendix (020: 379 → 352 lines, 021: 351 → 325). The requirements
+    (226 and 186 lines) and the examples stay, because test writers need them; the size that
+    is left is the requirements themselves.
+18. **Done 2026-10-04:** a reviewer re-check gets the saved first review (its path) and the fix
+    commit, not a pasted copy (`roles/`, `implement` and `write-tests` skills).
 19. **Stable instruction prefix.** Keep AGENTS.md/CLAUDE.md free of dated state (status lives in
     `agentkit status`, which the hook prints) so the cached prompt prefix survives across
     sessions. Put this rule in 011's TOKEN-EFFICIENCY.md.
