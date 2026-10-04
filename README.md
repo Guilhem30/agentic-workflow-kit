@@ -10,13 +10,41 @@ targets Claude Code, Codex CLI, OpenCode, DeepSeek Harness and Pi, plus a tool-n
 
 ## Status
 
-Under construction, built with its own process.
-- Specs 000–019 are approved.
-- The tests for 001 (config) and 002 (test lock) are written and awaiting owner approval.
-- The `agentkit` CLI is still stubs, so there is no install command yet. Spec 019 adds the
-  two-command install, the full command list and the adapter capability matrix. Until then, the
-  workflow below already works in this repository, using the manual stand-ins listed in
-  [`AGENTS.md`](AGENTS.md).
+Under construction, built with its own process. `python3 -m agentkit status` always shows the
+live state; on 2026-10-04 it was:
+
+| State | Specs |
+|---|---|
+| `done` | 001–009 (config, lock, guard, hook dialects, trace, status/handoff, test runner, codemap, lint-instructions), 011 (workflow content) |
+| `frozen`, being implemented | 010 (install, update, sync), 020 (chaos mode; its code is in, it closes now that 011 is done) |
+| `approved`, tests not written | 000, 012–016 (adapters), 017 (profiles), 018 (git hooks and CI), 019 (self-hosting and docs), 021 (`/autopilot`) |
+| `draft` | 022 (owner decisions), 023 (`/fix` path) |
+
+There is **no install command yet**: `install`, `update`, `sync` (010) and `autopilot` (021)
+are still stubs. Until they land, this repository uses a hand-written bootstrap instance
+([ADR 0001](docs/adr/0001-bootstrap-instance.md)): `scripts/bootstrap_sync.py` copies
+`.agents/skills/` and `roles/` into `.claude/`, and `scripts/session_start.py` prints
+`agentkit status` at session start. Spec 019 adds the two-command install and the adapter
+capability matrix.
+
+## Commands
+
+Run them with `python3 -m agentkit <command>` (`python` on Windows). These work today:
+
+| Command | What it does |
+|---|---|
+| `status` | Short session summary: profile, lock state, chaos state, active specs and the next step for each |
+| `test [scope]` | Runs the tests and prints a compact summary; the full log goes to `.agentkit/state/last-test.log` |
+| `lock freeze --spec NNN` / `verify` / `status` / `audit` / `restore` | The test lock in `tests.lock.json`. `lock unfreeze` is for the owner only, in their own terminal |
+| `new-spec`, `spec-status NNN <phase>` | Creates a draft spec from the templates; sets a non-gate phase |
+| `trace --spec NNN` | Requirement coverage: which `RNNN-MM` IDs have tests |
+| `handoff NNN --next "…"` | Writes the resume snapshot into the spec's `progress.md` |
+| `codemap` | Writes `docs/CODEMAP.md`, the map of where code lives |
+| `lint-instructions` | Checks the token budgets of AGENTS.md, skills and progress files |
+| `models` | Shows which model and effort each tier routes to |
+| `guard`, `verify` | Hook entry points: judge one tool call before it runs; verify the lock at end of turn |
+| `chaos approve` / `log` / `audit` / `clear` | Chaos mode (below). `clear` is owner-only |
+| `version` | Prints the version |
 
 ## How the kit is used
 
@@ -53,11 +81,16 @@ Each feature is one spec, `specs/NNN-slug/`, and moves through these phases:
 | `draft` | agent, `/spec NNN` | Writes EARS requirements with IDs (`RNNN-MM`) and an exact API contract. A reviewer subagent checks them. | **you approve** the spec |
 | `approved` | agent, `/write-tests NNN` | Writes stubs and failing tests, one or more per requirement. An auditor subagent hunts for weak tests. | → `tests-draft` |
 | `tests-draft` | you | You read the tests. They are the contract the code must meet. | **you approve** the tests |
-| `tests-approved` | you, `/freeze NNN` | The tests are hashed into `tests.lock.json`. From now on, no tool may change them. | → `frozen` |
-| `frozen` | agent, `/implement NNN` | Implements task by task until the frozen tests pass. A reviewer subagent looks for test gaming. | → `done` |
+| `tests-approved` | you, `/freeze NNN` | `agentkit lock freeze` hashes the tests into `tests.lock.json`. From now on, no tool may change them. | → `frozen` |
+| `frozen` | agent, `/implement NNN` | Implements task by task until the frozen tests pass. A reviewer subagent looks for test gaming. | green and reviewed → `done` |
+
+A spec that is abandoned is set to `dropped`. `agentkit status` prints the next step for every
+active spec, so you rarely need to remember where you were.
 
 Between phases, run `/handoff NNN` and then clear the context (`/clear` in Claude Code). The
-next session resumes from `specs/NNN-*/progress.md`, not from chat history.
+skill runs `agentkit handoff`, which writes a snapshot (phase, tasks, last test summary, next
+step) into `specs/NNN-*/progress.md`. The next session resumes from that file, not from chat
+history.
 
 **If a frozen test turns out to be wrong,** the agent must stop and tell you. Only you can
 unfreeze it, by running `agentkit lock unfreeze` in your own terminal. Every unfreeze is logged
@@ -65,6 +98,35 @@ in `tests.unfreeze-log.md`.
 
 **Tools without slash commands** (Codex, OpenCode, Pi, …) read the same files. Instead of
 `/spec 003`, write "Follow `.agents/skills/spec/SKILL.md` for spec 003."
+
+## Chaos mode (opt-in)
+
+By default you own every gate. Chaos mode ([ADR 0002](docs/adr/0002-chaos-mode.md), spec 020)
+lets agents pass gates themselves, and pulls you in only when something goes wrong. It is on in
+this repository.
+
+- **Only you enable it**, with `enabled = true` under `[chaos]` in `agentkit.toml`, a file agents
+  cannot edit. `[chaos] specs` limits it to chosen specs. It never covers spec 000.
+- **Agents pass a gate** with `agentkit chaos approve NNN <gate>` and a review whose last line is
+  the matching reviewer's passing verdict (spec-reviewer, test-auditor or impl-reviewer). An
+  agent unfreeze needs both the test-auditor and the impl-reviewer, and sends the spec back to
+  `tests-draft`.
+- **Critical problems escalate and pause chaos mode:** repeated rejections, a failing
+  `lock verify` or `lock audit`, a change to a protected file (spec 000, AGENTS.md, CLAUDE.md,
+  ADRs, `agentkit.toml`, role files), a rewritten base commit, or `verdict: needs owner`.
+- **Everything is logged** in an append-only chaos log with a hashed copy of each review.
+  `agentkit chaos log --open` lists open escalations; only you clear them, with
+  `agentkit chaos clear`.
+- **The limit:** the kit cannot prove a verdict came from an independent reviewer. Chaos mode
+  trades prevention for visibility and mechanical checks. Leave it off if you need prevention.
+
+**`/autopilot NNN`** (spec 021, not implemented yet) will chain the phases in chaos mode: writer
+subagent, reviewer subagent, `chaos approve`, commit, for NNN and every unfinished dependency,
+stopping on any escalation.
+
+**Coming next:** `/fix` (spec 023, draft) routes a problem found after a spec is `done`: a fix
+spec with new regression tests through the same gates, an amendment through `/feature`, a wrong
+frozen test to you, or a direct `fix:` commit for wording only.
 
 ## Prompting tips
 
@@ -114,11 +176,26 @@ works better than "finish 002". "Fix the failing `test_R002_11_*` tests" works b
 **Let model routing do its job.** Specs, tests and audits run on the strong model at high
 effort; implementation runs on the standard model; summaries run on the fast one. You don't
 need to ask for "think hard" in a spec session: the `/spec` skill already sets it.
+`agentkit models` shows the current routing.
+
+**Ask for the short version of the state.** "Run `agentkit status`" beats "read the README and
+progress.md": it prints the lock, chaos state and the next step per spec in about ten lines.
+Likewise, `agentkit test` prints only the summary and failures.
 
 ## Where to look
 
-- [`plan.md`](plan.md): the plan and the decisions behind it
-- [`specs/README.md`](specs/README.md): the specs, their dependencies and their order
-- [`AGENTS.md`](AGENTS.md): instructions for agents (and humans) working on the kit
-- [`docs/adr/`](docs/adr/): decisions, starting with the
-  [bootstrap instance](docs/adr/0001-bootstrap-instance.md)
+The kit **product** (what ships to other projects) and this repo's **instance** (what we use to
+build it) live side by side:
+
+| Path | What |
+|---|---|
+| [`workflow/`](workflow/) | Product: [`WORKFLOW.md`](workflow/WORKFLOW.md) (the process in full), [`TOKEN-EFFICIENCY.md`](workflow/TOKEN-EFFICIENCY.md), spec and config templates, role definitions |
+| [`skills/`](skills/) | Product: the 8 Agent Skills (`kickoff`, `feature`, `spec`, `write-tests`, `freeze`, `implement`, `handoff`, `autopilot`) |
+| [`profiles/`](profiles/) | Product: language presets (only `generic` so far; 017 adds the rest) |
+| [`agentkit/`](agentkit/) | Product: the CLI. [`docs/CODEMAP.md`](docs/CODEMAP.md) maps it |
+| `.agents/skills/`, [`roles/`](roles/) | Instance: the skills and roles this repo runs on, copied into `.claude/` by `scripts/bootstrap_sync.py` |
+| [`plan.md`](plan.md) | The plan and the decisions behind it |
+| [`specs/README.md`](specs/README.md) | The specs, their dependencies and their order |
+| [`AGENTS.md`](AGENTS.md) | Instructions for agents (and humans) working on the kit |
+| [`docs/priorities.md`](docs/priorities.md) | The remaining work, ranked by token savings |
+| [`docs/adr/`](docs/adr/) | Decisions: [0001 bootstrap instance](docs/adr/0001-bootstrap-instance.md), [0002 chaos mode](docs/adr/0002-chaos-mode.md) |
