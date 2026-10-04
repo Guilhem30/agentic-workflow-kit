@@ -2,11 +2,10 @@
 
 ## Where we are
 
-- **Done:** 001 config, 002 lock, 003 guard, 005 specs/trace (all through `chaos approve`).
-- **In flight:** 004 hook-dialects. The spec was amended, `/write-tests` has started, and the work
-  is not committed yet (`agentkit/payloads/`, `tests/hook_fixtures.py`).
-- **Frozen:** 020 chaos mode. Its last 16 errors wait on the 006 status stub.
-- **Approved, not started:** 006–019, 021.
+- **Done:** 001, 002, 003, 005, 006, 007, 008, 009 (all through `chaos approve`).
+- **In flight:** 004 hook-dialects (`tests-draft`; chaos log #25 escalated on `agentkit.toml`).
+- **Frozen:** 020 chaos mode. It goes `done` once 011 writes its WORKFLOW.md section.
+- **Approved, not started:** 000 (vision), 010–019, 021; 022 is a draft.
 - **Measured cost of one spec:** about 8–10 commits, 2–3 impl-reviewer passes and 1–2 test-auditor
   passes. All reviewers run on opus at high effort. Fix commits make up 11 of the 81 commits so far.
 
@@ -95,3 +94,44 @@ layer the chaos gates lean on.
 2. Done 2026-10-03: owner approved process items 1–5 and 7 (now in `.agents/skills/` and `roles/`) and
    the recommended answers A–H.
 3. Run 022, then 006, then 007, applying the reduced review loop.
+
+## Audit (2026-10-04)
+
+| # | State | Note |
+|---|---|---|
+| 1–4, 6, 10 | Done | In `.agents/skills/` and `roles/`; impl-reviewer runs on sonnet, test-auditor on opus |
+| 5 | Done, one gap | `specs/020-chaos-mode/progress.md` has a stale snapshot ("Next: spec 003 …"). Refresh it with `agentkit handoff 020` |
+| 7 | Done | AGENTS.md now uses `agentkit test` instead of `unittest \| tail` |
+| 8 | Bootstrap | `scripts/session_start.py` prints `agentkit status` and the resume point; 012 wires it for real |
+| 9 | Mostly moot | `agentkit test` already caps output. A Claude Code PostToolUse hook cannot rewrite Bash output |
+| 11 | Partial | "Bootstrap state" cut to 3 lines; the always-loaded estimate is ~1.6k tokens (budget 3k) |
+| 12 | Partial | 020 (379 lines) and 021 (351) are still 2× any other spec |
+| 13 | Partial | The allowlist lacks `agentkit test`, `status`, `codemap` and `lint-instructions`, which the skills now call. Owner edit (`.claude/settings.json` is in `ask`) |
+
+## New measures (2026-10-04)
+
+14. **Codemap symbols (owner, `agentkit.toml`).** `docs/CODEMAP.md` lists file names only because
+    `codemap.symbol_regexes` is empty (R008-02), so agents still grep for functions. Add
+    ```toml
+    [codemap]
+    symbol_regexes = ['^(?:def|class) (?P<name>[A-Za-z]\w*)']
+    ```
+    then run `agentkit codemap`. Measured: about 1.5k characters for all public top-level names.
+15. **Allowlist the compact commands (owner).** Add `Bash(python3 -m agentkit test:*)`,
+    `status:*`, `codemap:*` and `lint-instructions:*` to `.claude/settings.json`. This saves a
+    permission round-trip on every implement loop.
+16. **Unblock `status`'s "next" line.** It points at `/write-tests 000`, but 000 is the vision
+    spec and most of its requirements are tested through other specs or `[manual]`. The owner
+    decides whether 000 goes `done` (or `dropped` from the active list), so the first line a
+    session reads names real work (004 or 022).
+17. **Split 020/021 for real (owner, spec edit).** Move rationale, examples and the settled
+    "Open questions" to ADR 0002. Requirements and contract stay word for word, so frozen tests
+    are unaffected. Target ≤ 200 lines each.
+18. **Re-check from the saved review.** A second review pass gets
+    `specs/NNN-*/reviews/<n>-*.md` and `git diff <fix>`, not a pasted findings list (one line in
+    each reviewer role, then `bootstrap_sync`).
+19. **Stable instruction prefix.** Keep AGENTS.md/CLAUDE.md free of dated state (status lives in
+    `agentkit status`, which the hook prints) so the cached prompt prefix survives across
+    sessions. Put this rule in 011's TOKEN-EFFICIENCY.md.
+20. **Lint the resume point (018).** Have pre-commit `lint-instructions` also budget `progress.md`
+    files, so a bloated or stale snapshot fails the commit instead of being re-read every session.

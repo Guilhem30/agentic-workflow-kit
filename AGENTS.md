@@ -34,10 +34,9 @@ OpenCode, DeepSeek Harness and Pi. The kit is built with its own process and ins
 
 ## Bootstrap state
 
-`python3 -m agentkit` runs `lock`, `new-spec`, `spec-status`, `trace` and `chaos`. Guard hooks,
-git hooks and CI arrive with 004, 012 and 018; until then `.claude/settings.json` asks before
-edits under `tests/`. Chaos mode is on: gates pass through `chaos approve` (cycle in
-`specs/020-chaos-mode/progress.md`). See `docs/adr/0001-bootstrap-instance.md`.
+`python3 -m agentkit --help` lists the working commands. Hooks are bootstrap stand-ins until 012
+and 018 (`scripts/session_start.py`; `.claude/settings.json` asks before edits under `tests/`).
+Chaos mode is on: gates pass through `chaos approve`. See `docs/adr/0001-bootstrap-instance.md`.
 
 <!-- agentkit:begin (managed by agentkit; edit outside this block) -->
 ## Workflow (agentkit)
@@ -62,17 +61,17 @@ and `feature` (new idea) assign spec numbers.
 ### Commands (`python` on Windows)
 | Need | Command |
 |---|---|
-| Full suite | `python3 -m unittest discover -s tests 2>&1 \| tail -3` |
-| Failing test names | `python3 -m unittest discover -s tests 2>&1 \| grep -E '^(ERROR\|FAIL):'` |
-| One module or test | `python3 -m unittest tests.test_002_freeze` |
+| Full suite (compact; full log in `.agentkit/state/last-test.log`) | `python3 -m agentkit test` |
+| One module or test | `python3 -m agentkit test tests.test_002_freeze` |
+| Where code lives | `docs/CODEMAP.md` (refresh: `python3 -m agentkit codemap`) |
 | Requirement coverage | `python3 -m agentkit trace --spec NNN` |
 | Lock check | `python3 -m agentkit lock verify` |
 | Non-gate phase | `python3 -m agentkit spec-status NNN tests-draft` |
 
 ### Token discipline
 - Read the spec's API contract and `tasks.md` first. Open only the files they point to.
-- Run targeted tests while working. Run the full suite before each commit. Read only the tail
-  and the failing names; hand long tracebacks to the `summarizer`.
+- Run targeted tests while working and the full suite before each commit, always through
+  `agentkit test`. Hand long tracebacks from the log to the `summarizer`.
 - Hand verbose work (wide searches, log digging) to a fast-tier subagent. Do trivial steps yourself.
 - Commits: `spec(NNN): …`, `test(NNN): …`, `feat(NNN): …`, `fix: …`, `docs: …`, `chore: …`.
 <!-- agentkit:end -->
