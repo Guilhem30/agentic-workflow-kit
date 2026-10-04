@@ -22,3 +22,4 @@ Check:
 
 Report findings by severity (blocking, should fix, nit), each with the requirement ID or line.
 End with exactly one verdict line: `verdict: ready for owner approval` or `verdict: needs changes`.
+If only the owner can answer an open question, end with `verdict: needs owner` instead.

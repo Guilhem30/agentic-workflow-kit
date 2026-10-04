@@ -25,3 +25,9 @@ Check:
 
 Report findings by severity with `file:line`. End with exactly one verdict line:
 `verdict: approve` or `verdict: needs changes`.
+If only the owner can answer an open question, end with `verdict: needs owner` instead.
+
+Unfreeze review: when asked whether a frozen test is wrong, check whether the implementation is
+right and the test over-specified or mistaken, and whether the failure could be fixed in the
+code instead. End with exactly one verdict line: `verdict: unfreeze justified` or
+`verdict: keep frozen`.

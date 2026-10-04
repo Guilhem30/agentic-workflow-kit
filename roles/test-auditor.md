@@ -28,3 +28,8 @@ Also confirm every test currently fails on a stub, not on an import or fixture e
 
 Report findings by severity with `file:line`. End with exactly one verdict line:
 `verdict: ready to freeze` or `verdict: needs changes`.
+If only the owner can answer an open question, end with `verdict: needs owner` instead.
+
+Unfreeze review: when asked whether a frozen test is wrong, check whether it contradicts its
+spec requirement, and whether a correct implementation could pass it. End with exactly one
+verdict line: `verdict: unfreeze justified` or `verdict: keep frozen`.
