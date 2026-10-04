@@ -1,4 +1,4 @@
-"""Command-line entry point (spec 000). Dispatches `models` (001), `lock ...` (002),
+"""Command-line entry point (spec 000). Dispatches `models` (001), `install`, `update` and `sync` (010), `lock ...` (002),
 `new-spec`, `spec-status` and `trace` (005), `status` and `handoff` (006), `test` (007), `codemap` (008), `lint-instructions` (009), `chaos ...` (020) and `autopilot` (021)."""
 from __future__ import annotations
 
@@ -59,6 +59,14 @@ def cmd_install(args) -> int:
         print(MODELS_HELP, file=sys.stderr, end="")
         return 2
     raise NotImplementedError("R010-01")
+
+
+def cmd_update(args) -> int:
+    raise NotImplementedError("R010-17")
+
+
+def cmd_sync(args) -> int:
+    raise NotImplementedError("R010-18")
 
 
 def cmd_lock(args) -> int:
@@ -369,8 +377,26 @@ def build_parser() -> argparse.ArgumentParser:
 
     inst = sub.add_parser("install", help="install or update agentkit in this repository (010)",
                           epilog=MODELS_HELP, formatter_class=argparse.RawDescriptionHelpFormatter)
+    inst.add_argument("--target", default=".")
+    inst.add_argument("--profile")
+    inst.add_argument("--adapters")
+    inst.add_argument("--ci")
+    inst.add_argument("--ci-os", dest="ci_os")
     inst.add_argument("--models", choices=["tool", "kit"])
+    inst.add_argument("--owner", default="")
+    inst.add_argument("--python")
+    inst.add_argument("--force", action="store_true")
+    inst.add_argument("--self", dest="self_hosted", action="store_true")
     inst.set_defaults(func=cmd_install)
+
+    up = sub.add_parser("update", help="update the installed kit, keeping your changes (010)")
+    up.add_argument("--kit")
+    up.add_argument("--force", action="store_true")
+    up.set_defaults(func=cmd_update)
+
+    sy = sub.add_parser("sync", help="regenerate per-tool copies of skills and roles (010)")
+    sy.add_argument("--check", action="store_true")
+    sy.set_defaults(func=cmd_sync)
 
     lk = sub.add_parser("lock", help="test-freeze lock (002)")
     lsub = lk.add_subparsers(dest="lock_cmd", parser_class=_Parser)

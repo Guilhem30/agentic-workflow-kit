@@ -1,7 +1,7 @@
 ---
 id: "010"
 title: Install, update and sync
-status: approved
+status: tests-approved
 depends: ["001"]
 ---
 
@@ -29,11 +29,12 @@ skills and roles from the repo's neutral sources, and `sync --check` fails CI on
 - **R010-01** `agentkit install --target DIR [--profile P] [--adapters a,b] [--ci PROVIDERS] [--ci-os OSES] [--models tool|kit] [--owner @x] [--python CMD] [--force] [--self]`
   shall install into DIR. DIR must exist. PROVIDERS is `none` or a comma list of `github` and
   `gitlab`. OSES is a comma list of `linux`, `windows` and `macos`.
-- **R010-02** If an adapter, profile or CI value is unknown, then install shall exit 2 and write
-  nothing. The known adapters are `claude-code`, `codex`, `opencode`, `deepseek-harness` and `pi`.
+- **R010-02** If an adapter, profile or CI value is unknown, or a kit source file that install
+  plans is missing, then install shall exit 2 and write nothing. The known adapters are
+  `claude-code`, `codex`, `opencode`, `deepseek-harness` and `pi`.
 - **R010-03** When `agentkit.toml` is missing, install shall render it from the template with
-  the given options, storing `--ci` and `--ci-os` in the `[ci]` table. Defaults: profile
-  `generic`, python per R001-07.
+  the given options, storing `--ci` and `--ci-os` in the `[ci]` table and `--python` as
+  `[kit] python`. Defaults: profile `generic`, python per R001-07.
 - **R010-23** When `agentkit.toml` is missing, install shall require `--ci` to be given. When
   `--ci` is not `none`, it shall also require `--ci-os`. If either is missing, install writes
   nothing and exits 2, explaining both options. The operating systems are the project owner's
@@ -60,6 +61,8 @@ skills and roles from the repo's neutral sources, and `sync --check` fails CI on
 - **R010-10** When `--owner` is given, install shall maintain a block in `.github/CODEOWNERS` that
   assigns the owner to the lock, the unfreeze log, `.agentkit/`, `.githooks/`, every frozen glob,
   the chaos log (`[chaos] log`, default `chaos-log.jsonl`) and `<paths.specs>/*/reviews/` (020).
+  The owner is stored as `[kit] owner`. A later `--owner` replaces it, and `update` rebuilds
+  the block from the stored owner.
 - **R010-11** install shall maintain a `.gitignore` block with `.agentkit/state/`, `__pycache__/`,
   `*.agentkit-new` and `.autopilot/` (021).
 
@@ -112,12 +115,21 @@ agentkit/install.py:
   plan_kit(cfg, src, ci, owner) -> list[Planned]
   plan_derived(cfg) -> list[Planned]
   apply(root, planned, manifest, force=False, check=False, derived_scope=False) -> Report
-  install(target, profile=None, adapters=None, ci=None, owner="", python=None, src=KIT_ROOT,
-          force=False, self_hosted=False) -> Report
+  install(target, profile=None, adapters=None, ci=None, ci_os=None, models=None, owner="",
+          python=None, src=KIT_ROOT, force=False, self_hosted=False) -> Report
   update(root, src, force=False) -> Report
   sync(cfg, check=False) -> Report
 agentkit/adapters.py: kit_files(name, cfg, src, ctx), derived_files(name, cfg, ctx), post_install_notes(name)
 ```
+
+- `KIT_ROOT` is the directory that contains the `agentkit` package. In `install()`, `adapters`,
+  `ci` and `ci_os` are lists of names (the CLI splits its comma lists).
+- The lists of `Report` hold POSIX paths relative to the root, like `Planned.path`.
+- `Planned.path` is a POSIX path relative to the root. `mode` is `"once"`, `"managed"`,
+  `"block"` or `"derived"`. For a block file, `content` is the region between the markers and
+  `initial` the whole file written when it is missing (`None`: the markers around `content`).
+  The default `markers` are the Markdown pair of R010-14. Adapters (012 to 016) return
+  `Planned` lists from their generator functions.
 
 ## Examples and edge cases
 
@@ -136,6 +148,9 @@ agentkit/adapters.py: kit_files(name, cfg, src, ctx), derived_files(name, cfg, c
   in shared files such as AGENTS.md).
 - `--ci-os` and the rule that CI environments are chosen explicitly (owner's decision,
   2026-10-03).
+- `Planned` field semantics, `ci_os`/`models` in `install()`, `--python` stored as `[kit] python`,
+  exit 2 on a missing kit source, and the owner stored as `[kit] owner` (owner's answers
+  while writing the tests, 2026-10-04).
 - `.agentkit-new` conflict files, `--force`, `--owner` (CODEOWNERS), `--python`, `--self`, and
   the `.agentkit/bin/agentkit.cmd` launcher.
 
