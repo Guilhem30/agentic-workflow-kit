@@ -1,7 +1,7 @@
 ---
 id: "000"
 title: Kit vision and constitution
-status: approved
+status: tests-draft
 depends: []
 ---
 
