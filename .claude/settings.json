@@ -4,11 +4,23 @@
     "AGENTKIT_AGENT": "1"
   },
   "permissions": {
+    "allow": [
+      "Bash(python3 -m unittest:*)",
+      "Bash(python3 -m agentkit trace:*)",
+      "Bash(python3 -m agentkit lock verify:*)",
+      "Bash(python3 -m agentkit lock status:*)",
+      "Bash(python3 -m agentkit chaos audit:*)",
+      "Bash(python3 scripts/bootstrap_sync.py --check)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ],
     "deny": [
       "Edit(**/tests.lock.json)",
       "Edit(**/tests.unfreeze-log.md)",
       "Edit(**/.agentkit/**)",
       "Edit(**/agentkit.toml)",
+      "Edit(**/.git/config)",
       "Bash(*lock unfreeze*)",
       "Read(**/__pycache__/**)",
       "Read(**/build/**)",
@@ -20,6 +32,18 @@
       "Edit(.github/workflows/**)",
       "Edit(.gitlab-ci.yml)",
       "Edit(tests/**)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/session_start.py\""
+          }
+        ]
+      }
     ]
   }
 }

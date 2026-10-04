@@ -1,0 +1,15 @@
+{
+  "req": "R004-21",
+  "covers": "denied-shell-write",
+  "expected": "deny",
+  "payload": {
+    "session_id": "0b1c2d3e",
+    "transcript_path": "/home/dev/.claude/projects/x.jsonl",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "sed -i 's/a/b/' app/src/test/FooTest.kt",
+      "description": "edit test"
+    }
+  }
+}

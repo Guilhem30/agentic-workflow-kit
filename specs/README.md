@@ -31,6 +31,7 @@ not make. Approve or reject them explicitly.
 | 019 | [self-hosting-and-docs](019-self-hosting-and-docs/spec.md): README, adapter matrix, the kit installs itself | all | Principle 4, Verification |
 | 020 | [chaos-mode](020-chaos-mode/spec.md): opt-in agent-approved gates, escalation on critical problems | 001, 002, 003, 005, 006 | Owner's idea, 2026-10-03 (not in plan.md) |
 | 021 | [chaos-autopilot](021-chaos-autopilot/spec.md): `/autopilot NNN` runs a spec to done in chaos mode | 001, 002, 005, 006, 007, 011, 020 | Owner's idea, 2026-10-03 (not in plan.md) |
+| 022 | [owner-decisions](022-owner-decisions/spec.md): `.git/config` deny, markers in backticks, dropped-spec force freeze, deleted chaos log | 002, 003, 005, 020 | Owner's decisions on open questions, 2026-10-03 |
 
 Suggested order: 000 and 001 first, then 002, 003 and 005 (the core), then 004, 006, 007, 008
 and 009, then 010 and 011, then the adapters, 017, 018 and finally 019.
@@ -39,3 +40,13 @@ amendments applied) come after the specs they depend on.
 
 Requirement IDs are `RNNN-MM`. Requirements marked `[manual]` are checked by a human, not by a
 test.
+
+## Resume point (2026-10-04)
+
+Chaos mode (020) is on: agents pass gates with `agentkit chaos approve` and reviewer verdicts
+(cycle in `specs/020-chaos-mode/progress.md`). Done: 001, 002, 003, 004, 005, 006, 007, 008, 009.
+`agentkit status` shows the rest. Built for token savings first (`docs/priorities.md`): use
+`agentkit test`, `agentkit status`, `agentkit codemap`, `agentkit lint-instructions`.
+Next: 022 (draft), 010, 011, 012. `guard`, `verify` and `status --format` (004) are ready
+for the adapters (012 to 016). 020 goes `done` once 011 writes its
+WORKFLOW.md section. 011/012/019 touch protected files: expect an escalation for the owner.

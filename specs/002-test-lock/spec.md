@@ -1,7 +1,7 @@
 ---
 id: "002"
 title: Test-freeze lock
-status: tests-draft
+status: done
 depends: ["001", "005"]
 ---
 

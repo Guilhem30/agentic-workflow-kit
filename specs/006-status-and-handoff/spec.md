@@ -1,7 +1,7 @@
 ---
 id: "006"
 title: Status and handoff
-status: approved
+status: done
 depends: ["002", "005"]
 ---
 

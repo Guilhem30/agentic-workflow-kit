@@ -1,0 +1,14 @@
+{
+  "req": "R004-21",
+  "covers": "allowed-edit",
+  "expected": "allow",
+  "payload": {
+    "session_id": "019a-codex",
+    "hook_event_name": "PreToolUse",
+    "model": "gpt-5-codex",
+    "tool_name": "apply_patch",
+    "tool_input": {
+      "command": "*** Begin Patch\n*** Update File: app/src/main/Foo.kt\n@@\n-x\n+y\n*** End Patch\n"
+    }
+  }
+}

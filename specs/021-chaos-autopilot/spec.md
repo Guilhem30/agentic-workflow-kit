@@ -315,43 +315,11 @@ second in a row escalates, and the run stops and reports the escalation.
 - Any new gate, check or log record: those are 020's.
 - Proving that the subagents were independent (020, Out of scope).
 
-## Amendments to other specs (approved by the owner, 2026-10-03; applied 2026-10-03)
+## Amendments to other specs
 
-- **000**: the command list gains `autopilot` (021).
-- **010**: R010-11's `.gitignore` block gains `.autopilot/`.
-- **011**: Context counts 8 Agent Skills; R011-14 lists `autopilot`; R011-16 gives it
-  standard/medium; R011-15's user-only flag also applies to `autopilot` (R021-08); R011-01's
-  WORKFLOW.md covers `/autopilot` (R021-21, R021-25).
-- **012**: R012-07's skill list in the CLAUDE.md block gains `/autopilot` (owner only, chaos
-  mode), within its 20-line cap.
+Approved by the owner and applied on 2026-10-03; listed in ADR 0002's appendix.
 
-## Additions beyond plan.md
+## Additions and open questions
 
-The whole spec is the owner's idea of 2026-10-03, not in plan.md. Design choices to approve:
-- A read-only `agentkit autopilot NNN` command decides the next step, the findings to fix and
-  the last outcome, so the order of gates is code, not the agent's judgement, and a run resumes
-  from files. Its `blocked:` output and check order (R021-03, R021-06).
-- The `review-tests` step, where the test-writer runs only to fix findings.
-- Writers and reviewers run as subagents; the main session keeps only verdicts and paths.
-- Review files are written to a gitignored `.autopilot/` folder (Claude Code denies edits under
-  `.agentkit/`) before `chaos approve` copies them.
-- `/autopilot` is owner-only (`agentkit-user-only`), like `/freeze`.
-- One commit per gate, with `progress.md` in it; stop on any outcome that is not a pass or a
-  fresh reject (R021-13, R021-16).
-- Dependencies first: the chain order and the working spec (owner's decision, 2026-10-03). The
-  phases along the chain are read before chaos is checked on the working spec, since the phase
-  picks it (R021-03 items 7 and 8, unlike R020-38).
-- At most one agent unfreeze per run (owner's decision, 2026-10-03; R021-18).
-- The full suite runs after the impl-reviewer passes and before `chaos approve WWW done`.
-- One retry of a reviewer whose verdict line is invalid (R021-12).
-- A dependency outside chaos mode stops the run; the owner finishes it or lists it.
-- Without subagents, one gate per session (R021-19).
-- Tier standard/medium for the orchestrator: the strong-tier work is in the subagents.
-
-## Open questions
-
-None. Decided by the owner on 2026-10-03:
-1. One agent unfreeze per run (R021-18). An unfreeze lets the test be modified, audited and
-   frozen again.
-2. Dependencies under chaos mode are run first (the chain, R021-01, R021-03).
-3. One commit after each gate (R021-15).
+None open. The design choices and the owner's decisions of 2026-10-03 are in the appendix of
+[ADR 0002](../../docs/adr/0002-chaos-mode.md).

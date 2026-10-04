@@ -9,6 +9,10 @@ profile = "generic"
 adapters = ["claude-code"]
 self_hosted = true
 
+[chaos]
+enabled = true
+
+
 [ci]
 providers = ["github"]
 os = ["linux", "windows", "macos"]
@@ -33,3 +37,4 @@ frozen_globs = ["tests/**"]
 test_globs = ["tests/**/*.py"]
 source_globs = ["agentkit/**/*.py"]
 build_output_globs = ["**/__pycache__/**", "**/build/**", "**/dist/**", "**/*.egg-info/**"]
+output_filter_regex = '^(ERROR:|FAIL:|Ran |OK|FAILED)'

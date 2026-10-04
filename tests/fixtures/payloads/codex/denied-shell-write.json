@@ -1,0 +1,14 @@
+{
+  "req": "R004-21",
+  "covers": "denied-shell-write",
+  "expected": "deny",
+  "payload": {
+    "session_id": "019a-codex",
+    "hook_event_name": "PreToolUse",
+    "model": "gpt-5-codex",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "printf 'x' > app/src/test/FooTest.kt"
+    }
+  }
+}

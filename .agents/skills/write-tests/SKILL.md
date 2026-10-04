@@ -21,11 +21,13 @@ implementation: precise and complete, but not over-specified.
    no network, no wall clock, no ordering assumptions.
 4. **Red for the right reason.** Run the new modules. Every test must import cleanly and fail on
    a stub, not on a typo or a fixture bug.
-5. **Coverage.** Every non-manual ID of spec NNN appears in a test name (see the AGENTS.md
-   command table).
+5. **Coverage.** `python3 -m agentkit trace --spec NNN` passes: every non-manual ID of spec NNN
+   appears in a test name.
 6. **Audit.** Run the `test-auditor` role as a subagent (or apply `roles/test-auditor.md`
    inline). Fix its findings. If a test exposes a gap in the spec, propose the spec change to
    the owner first.
+   Audit at most twice: a full audit, then a re-check given only the saved first audit (its
+   path) and the fix commit. A third audit needs a new blocking finding in the re-check.
 7. Set `status: tests-draft`, update `progress.md`, and hand over: tests per requirement, the
    audit verdict and any spec changes. Ask the owner to review.
 8. **On approval in this conversation:** set `status: tests-approved` and commit

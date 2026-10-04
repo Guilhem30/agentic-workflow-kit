@@ -1,0 +1,12 @@
+{
+  "req": "R004-21",
+  "covers": "allowed-readonly-shell",
+  "expected": "allow",
+  "payload": {
+    "tool": "bash",
+    "args": {
+      "command": "git --no-pager log -1 --oneline",
+      "description": "log"
+    }
+  }
+}

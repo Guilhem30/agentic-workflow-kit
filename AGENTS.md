@@ -34,10 +34,9 @@ OpenCode, DeepSeek Harness and Pi. The kit is built with its own process and ins
 
 ## Bootstrap state
 
-`agentkit` itself is not implemented yet, so its commands do not run. The block below uses their
-manual equivalents. Claude Code hooks, git hooks, CI and `tests.lock.json` arrive with specs
-002–004 and 018. Until then, `.claude/settings.json` asks the owner before any edit under
-`tests/`. See `docs/adr/0001-bootstrap-instance.md`.
+`python3 -m agentkit --help` lists the working commands. Hooks are bootstrap stand-ins until 012
+and 018 (`scripts/session_start.py`; `.claude/settings.json` asks before edits under `tests/`).
+Chaos mode is on: gates pass through `chaos approve`. See `docs/adr/0001-bootstrap-instance.md`.
 
 <!-- agentkit:begin (managed by agentkit; edit outside this block) -->
 ## Workflow (agentkit)
@@ -45,8 +44,8 @@ manual equivalents. Claude Code hooks, git hooks, CI and `tests.lock.json` arriv
 Every feature goes spec → tests → freeze → implement. Phases (`status:` in `spec.md`):
 `draft` → `approved` → `tests-draft` → `tests-approved` → `frozen` → `done`.
 
-**Session start:** find the active spec in `specs/README.md` and read its `progress.md`, which
-has the resume point. Work on one phase of one spec per session. Only `kickoff` (new project)
+**Session start:** the resume point is the last section of `specs/README.md` (Claude Code prints
+it at session start); then read only the active spec's `progress.md`. Work on one phase of one spec per session. Only `kickoff` (new project)
 and `feature` (new idea) assign spec numbers.
 
 ### Hard rules
@@ -59,17 +58,20 @@ and `feature` (new idea) assign spec numbers.
 4. Make tests pass honestly: no special-casing of test inputs, no skipped or weakened checks.
 5. Every test name starts with the requirement ID it covers.
 
-### Commands (bootstrap equivalents)
+### Commands (`python` on Windows)
 | Need | Command |
 |---|---|
-| Full suite | `python3 -m unittest discover -s tests` (`python` on Windows) |
-| One module or test | `python3 -m unittest tests.test_002_freeze` |
-| Change a non-gate phase | edit `status:` in `spec.md` (`tests-draft`, `done`) |
-| Requirement coverage | `grep -rhoE 'R002[-_][0-9]{2}' tests \| sort -u` against the spec |
+| Full suite (compact; full log in `.agentkit/state/last-test.log`) | `python3 -m agentkit test` |
+| One module or test | `python3 -m agentkit test tests.test_002_freeze` |
+| Where code lives | `docs/CODEMAP.md` (refresh: `python3 -m agentkit codemap`) |
+| Requirement coverage | `python3 -m agentkit trace --spec NNN` |
+| Lock check | `python3 -m agentkit lock verify` |
+| Non-gate phase | `python3 -m agentkit spec-status NNN tests-draft` |
 
 ### Token discipline
 - Read the spec's API contract and `tasks.md` first. Open only the files they point to.
-- Run targeted tests while working. Run the full suite before each commit.
+- Run targeted tests while working and the full suite before each commit, always through
+  `agentkit test`. Hand long tracebacks from the log to the `summarizer`.
 - Hand verbose work (wide searches, log digging) to a fast-tier subagent. Do trivial steps yourself.
 - Commits: `spec(NNN): …`, `test(NNN): …`, `feat(NNN): …`, `fix: …`, `docs: …`, `chore: …`.
 <!-- agentkit:end -->

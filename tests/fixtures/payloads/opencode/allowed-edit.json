@@ -1,0 +1,13 @@
+{
+  "req": "R004-21",
+  "covers": "allowed-edit",
+  "expected": "allow",
+  "payload": {
+    "tool": "edit",
+    "args": {
+      "filePath": "app/src/main/Foo.kt",
+      "oldString": "class Foo",
+      "newString": "class Foo2"
+    }
+  }
+}
