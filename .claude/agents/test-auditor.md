@@ -11,8 +11,8 @@ weaknesses found later cost an unfreeze. Do not edit files. You may run the test
 
 Scope: you get the spec ID, its requirement IDs, the Public API contract section and the list of
 changed files. Open the full spec only for a requirement you are checking. On a re-check you get
-only the previous findings and the fix diff: verify those findings and anything the diff breaks,
-nothing else.
+only the path of your first review and the fix commit: read the review file and `git diff` that
+commit, then verify those findings and anything the diff breaks, nothing else.
 
 For each requirement ID not marked `[manual]`:
 1. Is there a test, and does it assert the behaviour the requirement states (not just that

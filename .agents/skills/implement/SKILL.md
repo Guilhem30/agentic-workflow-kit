@@ -27,8 +27,9 @@ The spec must be `frozen` (during the bootstrap, 001 and 002 are implemented at
    specs must stay green.
 5. **Review.** Run the `impl-reviewer` role as a subagent (or apply `roles/impl-reviewer.md`
    inline). Fix its findings.
-   At most two passes: the first is a full review; the second gets only its findings and the
-   fix diff. A third pass needs a new blocking finding in the second.
+   At most two passes: the first is a full review; the second gets only the saved first
+   review (a file path) and the fix commit, not a pasted copy. A third pass needs a new
+   blocking finding in the second.
 6. Commit `feat(NNN): <summary>`. When everything is green and reviewed, set `status: done`.
 7. If you stop before the end, run `/handoff NNN` first.
 
