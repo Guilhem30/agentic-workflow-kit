@@ -122,7 +122,7 @@ layer the chaos gates lean on.
 16. **Unblock `status`'s "next" line.** It points at `/write-tests 000`, but 000 is the vision
     spec and most of its requirements are tested through other specs or `[manual]`. The owner
     decides whether 000 goes `done` (or `dropped` from the active list), so the first line a
-    session reads names real work (004 or 022).
+    session reads names real work (022 or 010).
 17. **Split 020/021 for real (owner, spec edit).** Move rationale, examples and the settled
     "Open questions" to ADR 0002. Requirements and contract stay word for word, so frozen tests
     are unaffected. Target ≤ 200 lines each.
