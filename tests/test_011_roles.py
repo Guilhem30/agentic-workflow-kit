@@ -61,8 +61,6 @@ class TestRolesFunction(RepoTestCase):
         self.assertLessEqual(set(ROLE_NAMES), set(found))
         for name in found:
             self.assertEqual(found[name], (ROLES / f"{name}.md").resolve())
-        for name in ROLE_NAMES:
-            self.assertEqual(found[name], (ROLES / f"{name}.md").resolve())
 
     def test_R011_13_project_role_overrides_kit_role(self):
         mine = self.role("roles/summarizer.md", "summarizer")

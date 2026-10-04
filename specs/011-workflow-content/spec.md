@@ -1,7 +1,7 @@
 ---
 id: "011"
 title: Workflow content (process docs, templates, roles, skills)
-status: approved
+status: tests-draft
 depends: ["005", "009"]
 ---
 
