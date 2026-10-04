@@ -2,8 +2,7 @@
 
 ## Where we are
 
-- **Done:** 001, 002, 003, 005, 006, 007, 008, 009 (all through `chaos approve`).
-- **In flight:** 004 hook-dialects (`tests-draft`; chaos log #25 escalated on `agentkit.toml`).
+- **Done:** 001–009 (all through `chaos approve`).
 - **Frozen:** 020 chaos mode. It goes `done` once 011 writes its WORKFLOW.md section.
 - **Approved, not started:** 000 (vision), 010–019, 021; 022 is a draft.
 - **Measured cost of one spec:** about 8–10 commits, 2–3 impl-reviewer passes and 1–2 test-auditor
