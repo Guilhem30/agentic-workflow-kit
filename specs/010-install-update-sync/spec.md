@@ -1,7 +1,7 @@
 ---
 id: "010"
 title: Install, update and sync
-status: tests-approved
+status: frozen
 depends: ["001"]
 ---
 

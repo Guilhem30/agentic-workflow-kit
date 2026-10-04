@@ -213,6 +213,22 @@
       "sha256": "66e81fd830d9941ed70b5f9ed3a619e389696989f80058b030ff85a7c13df7a8",
       "spec": "009"
     },
+    "tests/test_010_blocks.py": {
+      "sha256": "1bc32c2f98e6b8b863b917d0dca6637746311d051a5b31f3a59dfc1799e21993",
+      "spec": "010"
+    },
+    "tests/test_010_install.py": {
+      "sha256": "8d4a6a862e48a11cf52f89bf4054f2883b6063d36a12d6bd797b49fd4a0fe0b7",
+      "spec": "010"
+    },
+    "tests/test_010_managed.py": {
+      "sha256": "4327735d188ae0ad177f6e7598daf1dc2a0449b79bece4dd5c466126a6f43384",
+      "spec": "010"
+    },
+    "tests/test_010_sync.py": {
+      "sha256": "fcb8cc29f57c7ee7042528d29eec0613c44f671d7167ec6351e146035c105c64",
+      "spec": "010"
+    },
     "tests/test_011_roles.py": {
       "sha256": "b3682ee381df544b2c12b8eb0599ea4672b2f2996809649d845f62037e0e4e6b",
       "spec": "011"
