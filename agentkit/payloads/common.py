@@ -117,6 +117,8 @@ def actions_for(tool_name: str, tool_input) -> list:
         paths: list[str] = []
         for key in _PATCH_KEYS:
             value = args.get(key)
+            if isinstance(value, (list, tuple)):  # e.g. ["apply_patch", "*** Begin Patch ..."]
+                value = "\n".join(v for v in value if isinstance(v, str))
             if isinstance(value, str):
                 paths += patch_paths(value)
         paths = _dedupe(paths)

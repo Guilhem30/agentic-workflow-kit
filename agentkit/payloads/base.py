@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from ..guard import ALLOW, ASK, DENY
 from .common import actions_for
 
-ASK_PREFIX = "needs the human's approval (ask them to make this change): "
+_ASK_PREFIX = "needs the human's approval (ask them to make this change): "
 
 
 @dataclass
@@ -46,7 +46,7 @@ class HookFormat:
         """The verdict and reason this tool can take: ask becomes deny without ask (R004-12)."""
         verdict, reason = decision.verdict, decision.reason
         if verdict == ASK and not self.supports_ask:
-            return DENY, ASK_PREFIX + reason
+            return DENY, _ASK_PREFIX + reason
         if verdict not in (ALLOW, ASK, DENY):
             return DENY, reason
         return verdict, reason
