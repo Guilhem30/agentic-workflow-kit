@@ -8,4 +8,5 @@ FORMATS: dict[str, HookFormat] = {m.FORMAT.name: m.FORMAT for m in (claude, code
 
 
 def get_format(name: str) -> HookFormat:
-    raise NotImplementedError("R004-01")
+    """The format named `name`; KeyError for an unknown name (the CLI's choices exit 2)."""
+    return FORMATS[name]
