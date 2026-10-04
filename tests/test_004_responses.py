@@ -78,9 +78,9 @@ class PreResponseTests(unittest.TestCase):
                     self.assertEqual(set(out), {"decision", "reason"})
                     self.assertEqual(out["decision"], verdict)
                     self.assertIsInstance(out["reason"], str)
+                    if verdict == DENY:
+                        self.assertIn(REASON, out["reason"])
                     self.assertEqual(response.code, 0)
-        out = json.loads(self.respond("pi", DENY).stdout)
-        self.assertIn(REASON, out["reason"])
 
     def test_R004_13_plugin_allow_without_reasons(self):
         for fmt in PLUGINS:
@@ -114,6 +114,16 @@ class PreResponseTests(unittest.TestCase):
                     self.assertEqual(json.loads(response.stdout)["decision"], ALLOW)
                 else:
                     self.assertEqual(response.stdout.strip(), "")
+
+    def test_R004_22_the_degraded_flag_decides_not_the_text(self):
+        for fmt in FORMAT_NAMES:
+            with self.subTest(fmt=fmt, degraded=True):
+                response = self.respond(fmt, ALLOW, ("other text",), degraded=True)
+                self.assertEqual(response.code, 1)
+                self.assertIn("other text", response.stderr)
+            with self.subTest(fmt=fmt, degraded=False):
+                response = self.respond(fmt, ALLOW, (DEGRADED_MSG,), degraded=False)
+                self.assertEqual((response.code, response.stderr), (0, ""))
 
     def test_R004_22_degraded_deny_is_a_normal_deny(self):
         reason = "agentkit guard error (x): writes to test files are refused until the guard is fixed"

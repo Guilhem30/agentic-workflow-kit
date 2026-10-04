@@ -108,12 +108,6 @@ class VerifyCommandTests(HookCase):
         self.assertEqual(code, 0)
         self.assert_problems(json.loads(out)["reason"], "missing")
 
-    def test_R004_15_runs_lock_verify(self):
-        from agentkit import lock
-        with mock.patch.object(lock, "verify", wraps=lock.verify) as spy:
-            self.verify("claude")
-        self.assertTrue(spy.called)
-
     def test_R004_16_clean_lock_prints_nothing(self):
         for fmt in CLAUDE_SHAPED:
             with self.subTest(fmt=fmt):
@@ -164,6 +158,25 @@ class VerifyCommandTests(HookCase):
     def test_R004_19_plain_verify_needs_no_stdin(self):
         code, out, _ = self.hook("verify", stdin="")
         self.assertEqual((code, out.strip()), (0, "verify: OK"))
+
+
+class TwoFrozenFilesTests(HookCase):
+    FROZEN_EXTRA = ("app/src/test/BarTest.kt",)
+
+    def test_R004_15_each_violated_file_is_reported(self):
+        self.violate()
+        (self.root / "app/src/test/BarTest.kt").unlink()
+        for fmt in (None, "claude", "pi"):
+            with self.subTest(fmt=fmt):
+                argv = ("verify",) if fmt is None else ("verify", "--format", fmt)
+                code, out, _ = self.hook(*argv, stdin="{}")
+                if fmt == "claude":
+                    out = json.loads(out)["reason"]
+                elif fmt == "pi":
+                    out = json.loads(out)["message"]
+                self.assertIn(f"modified {FROZEN}", out)
+                self.assertIn("missing app/src/test/BarTest.kt", out)
+                self.assertIn(RESTORE_HINT, out)
 
 
 class StatusCommandTests(HookCase):

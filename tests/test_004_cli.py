@@ -100,13 +100,25 @@ class CommandFormatTests(HookCase):
                     self.assertEqual(code, 0)
                     # {} has no stop_hook_active: the first stop blocks (R004-16).
                     self.assertEqual(json.loads(out)["decision"], "block")
+            for fmt in PLUGINS:
+                with self.subTest(fmt=fmt, stdin=stdin):
+                    code, out, _ = self.hook("verify", "--format", fmt, stdin=stdin)
+                    self.assertEqual(code, 0)
+                    self.assertIs(json.loads(out)["ok"], False)
 
     def test_R004_02_bad_payload_is_empty_for_status(self):
         with mock.patch("agentkit.status.status_lines", return_value=["one"]):
             for stdin in BAD_PAYLOADS:
-                with self.subTest(stdin=stdin):
-                    code, out, _ = self.hook("status", "--format", "pi", stdin=stdin)
-                    self.assertEqual((code, json.loads(out)), (0, {"context": "one"}))
+                for fmt in PLUGINS:
+                    with self.subTest(fmt=fmt, stdin=stdin):
+                        code, out, _ = self.hook("status", "--format", fmt, stdin=stdin)
+                        self.assertEqual((code, json.loads(out)), (0, {"context": "one"}))
+                for fmt in ("claude", "codex"):
+                    with self.subTest(fmt=fmt, stdin=stdin):
+                        code, out, _ = self.hook("status", "--format", fmt, stdin=stdin)
+                        self.assertEqual(code, 0)
+                        self.assertEqual(json.loads(out)["hookSpecificOutput"]["additionalContext"],
+                                         "one")
 
 
 if __name__ == "__main__":

@@ -34,7 +34,8 @@ def normalize(actions) -> dict:
         elif isinstance(action, ReadAction):
             out.setdefault("read", set()).update(action.paths)
         elif isinstance(action, ShellAction):
-            out.setdefault("shell", set()).add(action.command)
+            if action.command:
+                out.setdefault("shell", set()).add(action.command)
         else:
             raise AssertionError(f"not a neutral action: {action!r}")
     return {k: v for k, v in out.items() if v}
@@ -56,7 +57,8 @@ class HookCase(GuardCase):
         """Run agentkit in-process with `stdin`; return (code, stdout, stderr)."""
         from agentkit import cli
         out, err = io.StringIO(), io.StringIO()
-        with mock.patch("sys.stdin", io.StringIO(stdin)), contextlib.redirect_stdout(out), \
+        with mock.patch("sys.stdin", io.TextIOWrapper(io.BytesIO(stdin.encode("utf-8")),
+                                                                 encoding="utf-8")), contextlib.redirect_stdout(out), \
                 contextlib.redirect_stderr(err):
             try:
                 code = cli.main(list(argv))
