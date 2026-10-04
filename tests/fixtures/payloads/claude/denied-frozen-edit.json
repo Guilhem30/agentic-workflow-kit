@@ -1,0 +1,20 @@
+{
+  "req": "R004-21",
+  "covers": "denied-frozen-edit",
+  "expected": "deny",
+  "payload": {
+    "session_id": "0b1c2d3e",
+    "transcript_path": "/home/dev/.claude/projects/x.jsonl",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "MultiEdit",
+    "tool_input": {
+      "file_path": "app/src/test/FooTest.kt",
+      "edits": [
+        {
+          "old_string": "frozen",
+          "new_string": "thawed"
+        }
+      ]
+    }
+  }
+}

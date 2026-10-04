@@ -1,0 +1,11 @@
+{
+  "req": "R004-21",
+  "covers": "allowed-readonly-shell",
+  "expected": "allow",
+  "payload": {
+    "tool": "bash",
+    "args": {
+      "command": "wc -l app/src/test/FooTest.kt"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "req": "R004-21",
+  "covers": "denied-frozen-edit",
+  "expected": "deny",
+  "payload": {
+    "tool": "write",
+    "args": {
+      "path": "app/src/test/FooTest.kt",
+      "content": "// gone\n"
+    }
+  }
+}

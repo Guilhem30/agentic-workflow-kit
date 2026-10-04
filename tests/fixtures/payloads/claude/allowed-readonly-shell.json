@@ -1,0 +1,15 @@
+{
+  "req": "R004-21",
+  "covers": "allowed-readonly-shell",
+  "expected": "allow",
+  "payload": {
+    "session_id": "0b1c2d3e",
+    "transcript_path": "/home/dev/.claude/projects/x.jsonl",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cat app/src/test/FooTest.kt && ls app/src",
+      "description": "look"
+    }
+  }
+}

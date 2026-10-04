@@ -1,0 +1,14 @@
+{
+  "req": "R004-21",
+  "covers": "denied-frozen-edit",
+  "expected": "deny",
+  "payload": {
+    "session_id": "019a-codex",
+    "hook_event_name": "PreToolUse",
+    "model": "gpt-5-codex",
+    "tool_name": "apply_patch",
+    "tool_input": {
+      "command": "*** Begin Patch\n*** Delete File: app/src/test/FooTest.kt\n*** End Patch\n"
+    }
+  }
+}

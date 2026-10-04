@@ -10,6 +10,8 @@ from agentkit import __doc__ as KIT_DOC
 from agentkit.config import MODELS_HELP, TIER_EFFORT, TIERS, ConfigError, load_config
 from agentkit.lock import LockError, OwnerCheckError
 
+HOOK_FORMATS = ("claude", "codex", "dsh", "opencode", "pi")  # spec 004
+
 VERSION = "0.0.0"
 
 
@@ -212,8 +214,18 @@ def cmd_trace(args) -> int:
     return code
 
 
+def cmd_guard(args) -> int:
+    raise NotImplementedError("R004-02")
+
+
+def cmd_verify(args) -> int:
+    raise NotImplementedError("R004-15")
+
+
 def cmd_status(args) -> int:
     from agentkit import status
+    if args.format is not None:
+        raise NotImplementedError("R004-20")
     for line in status.status_lines(load_config()):
         print(line)
     return 0
@@ -301,7 +313,16 @@ def build_parser() -> argparse.ArgumentParser:
     tr.add_argument("--spec")
     tr.set_defaults(func=cmd_trace)
 
+    gd = sub.add_parser("guard", help="pre-tool hook: judge one tool call (003, 004)")
+    gd.add_argument("--format", required=True, choices=HOOK_FORMATS)
+    gd.set_defaults(func=cmd_guard)
+
+    ve = sub.add_parser("verify", help="end-of-turn hook: lock verify (004)")
+    ve.add_argument("--format", choices=HOOK_FORMATS)
+    ve.set_defaults(func=cmd_verify)
+
     st = sub.add_parser("status", help="short session summary (006)")
+    st.add_argument("--format", choices=HOOK_FORMATS)
     st.set_defaults(func=cmd_status)
 
     ho = sub.add_parser("handoff", help="write the resume snapshot to progress.md (006)")

@@ -1,7 +1,7 @@
 ---
 id: "004"
 title: Hook dialects, end-of-turn verify and session-start status
-status: approved
+status: tests-draft
 depends: ["003", "006"]
 ---
 
