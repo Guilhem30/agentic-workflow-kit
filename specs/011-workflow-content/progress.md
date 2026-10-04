@@ -1,14 +1,19 @@
 # 011 workflow-content: progress
 
-History is in git (`git log -- specs/011-workflow-content/`).
+History is in git (`git log -- specs/011-workflow-content/`) and the chaos log.
 
-- 2026-10-04: tests written (`tests/test_011_{templates,roles,skills}.py`, fixtures in
-  `tests/content_fixtures.py`), stub `agentkit/roles.py`. Phase `tests-draft`.
-- Spec changes from the owner's answers: R011-07 key lists, `roles(cfg)` (R011-13), R011-08
-  lints with the kit skills. R011-10: impl-reviewer `standard` (owner-approved 716e46a).
-  Wording: R011-04 (trace read the backticked marker as manual), R011-06 (markers counted).
-- test-auditor: needs changes (M1-M3) → fixed in 7305d0a → re-check `verdict: ready to freeze`.
-- 2026-10-04: owner wrote the launcher rule into R011-05 (was audit L3) and approved the tests
-  in conversation. Phase `tests-approved`.
+- Done 2026-10-04: frozen by the owner, implemented (bdb39d3), impl-reviewer `verdict: approve`.
+- Open, low: `roles(cfg)` treats any `*.md` in the roles folder as a role (a `README.md` would
+  become one); a few launcher lines in the skills wrap past 100 characters.
 
-**Next:** the owner runs `/freeze 011`; then `/implement 011`.
+<!-- agentkit:snapshot:begin -->
+- 2026-10-04 01:46 (UTC), phase `done`
+- Tasks: 5/5 done
+- Last `agentkit test`:
+  PASS: python -m unittest discover -s tests -t .
+  Ran 777 tests in 322.857s
+  OK (skipped=1)
+- Branch `main`, 4 uncommitted change(s)
+
+**Next:** none: spec 011 is done
+<!-- agentkit:snapshot:end -->
