@@ -35,8 +35,8 @@ tested.
   `spec.md`, `plan.md`, `tasks.md`, `progress.md`, `adr.md`, `specs-README.md` and
   `unfreeze-log.md`.
 - **R011-04** `spec.md` shall have front matter (`id`, `title`, `status: draft`) and these
-  sections: Context, Requirements (EARS) with an explanation of the patterns and of `[manual]`,
-  Public API contract, Examples and edge cases, Out of scope, Open questions.
+  sections: Context, Requirements (EARS) with an explanation of the patterns and of the manual
+  marker, Public API contract, Examples and edge cases, Out of scope, Open questions.
 - **R011-05** `AGENTS.md.tmpl` shall contain project sections outside the agentkit block, and
   inside the block:
   - the session-start instruction;
@@ -46,20 +46,29 @@ tested.
     mode applies, gates go through `agentkit chaos approve` (020). Both stay within R011-06;
   - a command table;
   - token-discipline rules.
-- **R011-06** The agentkit block of the rendered AGENTS.md shall be at most 45 lines, so that
-  projects keep at least 100 lines of the 150-line budget for themselves.
-- **R011-07** Rendering any template with an install context shall leave no `{{…}}` placeholder
-  of a known context key. Templates must not use unknown keys.
-- **R011-08** An AGENTS.md produced from the template, together with the CLAUDE.md block (012),
-  shall pass `lint-instructions` (009).
+- **R011-06** The agentkit block of the rendered AGENTS.md, counted from its begin marker line to
+  its end marker line inclusive, shall be at most 45 lines, so that projects keep at least 100
+  lines of the 150-line budget for themselves.
+- **R011-07** Templates shall use only known placeholder keys, each written `{{key}}`:
+  - the spec-folder templates (`spec.md`, `plan.md`, `tasks.md`, `progress.md`) only the
+    `new-spec` keys `id`, `slug` and `title` (005);
+  - the other templates only the install context keys `python`, `version`, `profile`,
+    `adapters`, `ci_providers`, `ci_os`, `models`, `specs`, `lock`, `unfreeze_log`, `codemap`,
+    `skills`, `roles` and `chaos_log`, which install (010) supplies.
+
+  Rendering a template with its keys shall leave no `{{…}}` placeholder.
+- **R011-08** An AGENTS.md produced from the template, together with a CLAUDE.md that imports it
+  (`@AGENTS.md`) and the kit skills installed in `<paths.skills>`, shall pass
+  `lint-instructions` (009). The full CLAUDE.md block is checked by 012 (R012-08).
 
 ### Roles
 - **R011-09** `workflow/roles/` shall contain `spec-writer`, `spec-reviewer`, `test-writer`,
   `test-auditor`, `implementer`, `impl-reviewer` and `summarizer`. Each has front matter `name`
   (equal to the file name), `description`, `tier` (`strong`/`standard`/`fast`), `effort`
   (`low`/`medium`/`high`) and `tools` (a subset of `read`, `edit`, `shell`).
-- **R011-10** The tiers shall be: strong for spec-writer, spec-reviewer, test-writer,
-  test-auditor and impl-reviewer; standard for implementer; fast for summarizer.
+- **R011-10** The tiers shall be: strong for spec-writer, spec-reviewer, test-writer and
+  test-auditor; standard for implementer and impl-reviewer (owner's decision, 2026-10-03,
+  `docs/priorities.md`); fast for summarizer.
 - **R011-11** spec-reviewer, test-auditor and impl-reviewer shall not have the `edit` tool.
 - **R011-12** Each reviewer role shall end with an explicit verdict format. The test-auditor
   checks whether a plausible wrong implementation could pass, and the impl-reviewer looks for
@@ -67,7 +76,10 @@ tested.
   also end an unfreeze review with `verdict: unfreeze justified` or `verdict: keep frozen`, and
   every reviewer role may end with `verdict: needs owner` for a question only the owner can
   answer (020). [manual]
-- **R011-13** Project roles in `<paths.roles>/` shall override kit roles that have the same name.
+- **R011-13** `roles(cfg)` shall return every role as `{name: path}`: the kit roles in
+  `workflow/roles/` of the kit source, plus the project roles in `<paths.roles>/`, where a
+  project role overrides the kit role that has the same name. A role's name is its file name
+  without `.md`. Sync (010, 012) takes its roles from this function.
 
 ### Skills
 - **R011-14** `skills/` shall contain `kickoff`, `feature`, `spec`, `write-tests`, `freeze`,
@@ -100,11 +112,16 @@ tested.
 - **R011-21** Only `kickoff` and `feature` shall assign spec numbers. `spec` works on an
   existing draft. [manual]
 - **R011-18** Skills shall refer to agentkit commands through `{{python}} .agentkit/bin/agentkit`,
-  rendered at install time.
+  rendered at install time with the install context keys of R011-07.
 
 ## Public API contract
 
-The files and front-matter fields listed above. There is no Python API.
+The files and front-matter fields listed above, and:
+
+```text
+agentkit/roles.py:
+  roles(cfg) -> dict[str, Path]     # R011-13
+```
 
 ## Examples and edge cases
 
@@ -118,6 +135,8 @@ The files and front-matter fields listed above. There is no Python API.
 - Templates `agentkit.toml.tmpl`, `specs-README.md` and `unfreeze-log.md`.
 - The block-size cap (R011-06), and the `metadata` convention for agentkit extras (R011-14).
 - The `kickoff` and `feature` skills and the numbering rules (R011-19 to R011-21) (owner's request, 2026-10-03).
+- The placeholder key lists (R011-07), `roles(cfg)` (R011-13) and linting AGENTS.md with the kit
+  skills (R011-08) (owner's answers while writing the tests, 2026-10-04).
 - Chaos mode in WORKFLOW.md, AGENTS.md and the reviewer verdicts (R011-01, R011-05, R011-12; 020
   amendment, approved by the owner on 2026-10-03).
 
