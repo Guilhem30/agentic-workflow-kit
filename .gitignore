@@ -1,4 +1,5 @@
 *.pyc
+.autopilot/
 
 # agentkit:begin (managed by agentkit; edit outside this block)
 .agentkit/state/
