@@ -41,11 +41,12 @@ amendments applied) come after the specs they depend on.
 Requirement IDs are `RNNN-MM`. Requirements marked `[manual]` are checked by a human, not by a
 test.
 
-## Resume point (2026-10-03)
+## Resume point (2026-10-04)
 
 Chaos mode (020) is on: agents pass gates with `agentkit chaos approve` and reviewer verdicts
-(cycle in `specs/020-chaos-mode/progress.md`). Done: 001, 002, 003, 005, 006, 007, 008, 009.
+(cycle in `specs/020-chaos-mode/progress.md`). Done: 001, 002, 003, 004, 005, 006, 007, 008, 009.
 `agentkit status` shows the rest. Built for token savings first (`docs/priorities.md`): use
 `agentkit test`, `agentkit status`, `agentkit codemap`, `agentkit lint-instructions`.
-Next: 004 (tests in progress), 022 (draft), 010, 011, 012. 020 goes `done` once 011 writes its
+Next: 022 (draft), 010, 011, 012. `guard`, `verify` and `status --format` (004) are ready
+for the adapters (012 to 016). 020 goes `done` once 011 writes its
 WORKFLOW.md section. 011/012/019 touch protected files: expect an escalation for the owner.
