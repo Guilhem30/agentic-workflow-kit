@@ -1,0 +1,53 @@
+# Project instructions
+
+## Product
+
+What this project is, in two or three lines.
+
+## Layout
+
+| Path | What |
+|---|---|
+| `{{specs}}/` | One folder per spec: `spec.md`, `plan.md`, `tasks.md`, `progress.md` |
+
+## Conventions
+
+Language, style, error handling and anything else agents must follow here.
+
+<!-- agentkit:begin (managed by agentkit; edit outside this block) -->
+## Workflow (agentkit)
+
+Every feature goes spec → tests → freeze → implement. Phases (`status:` in `spec.md`):
+`draft` → `approved` → `tests-draft` → `tests-approved` → `frozen` → `done`.
+
+**Session start:** read the resume point printed by `status` (or the last section of
+`{{specs}}/README.md`), then only the active spec's `progress.md`. Work on one phase of one
+spec per session. Only `kickoff` and `feature` assign spec numbers.
+
+### Hard rules
+1. Frozen files never change: no edit, move, delete or regeneration, by any tool or shell
+   command. If a frozen test looks wrong, stop and tell the owner. Only the owner unfreezes.
+2. Never edit `{{lock}}`, `{{unfreeze_log}}`, `{{chaos_log}}`, `{{specs}}/*/reviews/`,
+   `agentkit.toml` or `.agentkit/`. Never commit with `--no-verify`, change `core.hooksPath`,
+   or run `lock unfreeze` or `chaos clear`.
+3. The owner owns the gates. Set `approved`, `tests-approved` or `dropped` only when the owner
+   said so in this conversation. `frozen` is set only by `lock freeze`. Where chaos mode
+   applies, gates go through `agentkit chaos approve`.
+4. Make tests pass honestly: no special-casing of test inputs, no skipped or weakened checks.
+5. Every test name starts with the requirement ID it covers.
+
+### Commands
+| Need | Command |
+|---|---|
+| Full suite (compact summary) | `{{python}} .agentkit/bin/agentkit test` |
+| One module or test | `{{python}} .agentkit/bin/agentkit test <scope>` |
+| Where code lives | `{{codemap}}` (refresh: `{{python}} .agentkit/bin/agentkit codemap`) |
+| Requirement coverage | `{{python}} .agentkit/bin/agentkit trace --spec NNN` |
+| Lock check | `{{python}} .agentkit/bin/agentkit lock verify` |
+
+### Token discipline
+- Read the spec's API contract and `tasks.md` first. Open only the files they point to.
+- Run targeted tests while working and the full suite before each commit.
+- Hand verbose work (wide searches, long logs) to a fast-tier subagent.
+- Commits: `spec(NNN): …`, `test(NNN): …`, `feat(NNN): …`, `fix: …`, `docs: …`.
+<!-- agentkit:end -->

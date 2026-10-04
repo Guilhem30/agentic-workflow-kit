@@ -1,0 +1,26 @@
+# agentkit configuration. Agents may not edit this file; the owner does.
+
+[kit]
+version = "{{version}}"
+profile = "{{profile}}"
+adapters = {{adapters}}
+
+[ci]
+providers = {{ci_providers}}
+os = {{ci_os}}
+
+[paths]
+specs = "{{specs}}"
+lock = "{{lock}}"
+unfreeze_log = "{{unfreeze_log}}"
+codemap = "{{codemap}}"
+skills = "{{skills}}"
+roles = "{{roles}}"
+
+[models]
+mode = "{{models}}"
+
+[chaos]
+# Opt-in: agents pass the gates through `agentkit chaos approve`. Off by default.
+enabled = false
+log = "{{chaos_log}}"
