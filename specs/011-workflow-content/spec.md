@@ -1,7 +1,7 @@
 ---
 id: "011"
 title: Workflow content (process docs, templates, roles, skills)
-status: tests-draft
+status: tests-approved
 depends: ["005", "009"]
 ---
 
@@ -44,7 +44,8 @@ tested.
     test names). The protected-files rule also forbids editing the chaos log and
     `<paths.specs>/*/reviews/` and running `chaos clear`; the gates rule says that where chaos
     mode applies, gates go through `agentkit chaos approve` (020). Both stay within R011-06;
-  - a command table;
+  - a command table whose agentkit commands run through `{{python}} .agentkit/bin/agentkit`
+    (the launcher of R010-07);
   - token-discipline rules.
 - **R011-06** The agentkit block of the rendered AGENTS.md, counted from its begin marker line to
   its end marker line inclusive, shall be at most 45 lines, so that projects keep at least 100
